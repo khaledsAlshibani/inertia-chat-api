@@ -1,0 +1,6 @@
+spring:
+  application:
+    name: Inertia Chat App
+
+server:
+  port: 9090
