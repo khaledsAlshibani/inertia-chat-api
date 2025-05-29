@@ -1,6 +1,14 @@
 spring:
   application:
     name: Inertia Chat App
+  datasource:
+    url: jdbc:postgresql://localhost:5433/inertia_chat
+    username: postgres
+    password: postgres
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
 
 server:
   port: 9090
