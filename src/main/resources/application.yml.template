@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: Inertia Chat App
+  datasource:
+    url: jdbc:postgresql://localhost:5433/inertia_chat
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+server:
+  port: ${SERVER_PORT:9090}
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:your-secret-key-here}
+    expiration-time: ${JWT_EXPIRATION:3600000}  # 1 hour in milliseconds
+    refresh-token:
+      expiration-time: ${JWT_REFRESH_EXPIRATION:604800000}  # 7 days in milliseconds 

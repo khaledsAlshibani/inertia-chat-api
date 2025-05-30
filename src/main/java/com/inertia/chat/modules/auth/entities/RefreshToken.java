@@ -21,9 +21,6 @@ public class RefreshToken {
     private Long id;
 
     @Column(unique = true, nullable = false)
-    private String jti;
-
-    @Column(unique = true, nullable = false)
     private String token;
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -1,0 +1,36 @@
+@baseUrl = {{$dotenv API_BASE_URL}}
+@contentType = application/json
+@cookieJar = api/auth
+
+### Signup
+# @name signup
+POST {{baseUrl}}/auth/signup
+Content-Type: {{contentType}}
+
+{
+  "email": "testuser@example.com",
+  "username": "testuser",
+  "name": "Test User",
+  "password": "password123"
+}
+
+### Login
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "emailOrUsername": "testuser",
+  "password": "password123"
+}
+
+### Refresh (requires refreshToken cookie from login response)
+# @name refresh
+POST {{baseUrl}}/auth/refresh
+Cookie: {{cookieJar}}
+
+### Logout (requires refreshToken cookie from login/refresh response)
+# @name logout
+POST {{baseUrl}}/auth/logout
+Cookie: {{cookieJar}}
+Authorization: Bearer {{login.response.body.accessToken}}
