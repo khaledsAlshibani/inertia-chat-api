@@ -4,20 +4,18 @@ import com.inertia.chat.modules.auth.dto.*;
 import com.inertia.chat.modules.auth.entities.RefreshToken;
 import com.inertia.chat.modules.auth.repositories.RefreshTokenRepository;
 import com.inertia.chat.modules.auth.services.AuthService;
-import com.inertia.chat.modules.auth.util.JWTUtil;
-import com.inertia.chat.modules.auth.util.HashUtil;
+import com.inertia.chat.modules.auth.utils.JWTUtil;
+import com.inertia.chat.modules.auth.utils.HashUtil;
 import com.inertia.chat.modules.users.entities.User;
 import com.inertia.chat.modules.users.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor

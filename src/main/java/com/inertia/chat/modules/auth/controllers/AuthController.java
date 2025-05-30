@@ -3,7 +3,7 @@ package com.inertia.chat.modules.auth.controllers;
 import com.inertia.chat.modules.auth.dto.*;
 import com.inertia.chat.modules.auth.services.AuthService;
 import com.inertia.chat.modules.auth.services.impl.AuthServiceImpl;
-import com.inertia.chat.modules.auth.util.CookieUtil;
+import com.inertia.chat.modules.auth.utils.CookieUtil;
 import com.inertia.chat.common.dto.EnvelopeResponse;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -11,7 +11,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")

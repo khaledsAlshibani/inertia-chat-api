@@ -1,4 +1,4 @@
-package com.inertia.chat.modules.auth.util;
+package com.inertia.chat.modules.auth.utils;
 
 import org.springframework.stereotype.Component;
 

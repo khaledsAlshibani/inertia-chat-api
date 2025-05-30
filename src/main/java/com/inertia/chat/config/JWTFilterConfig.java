@@ -1,6 +1,6 @@
 package com.inertia.chat.config;
 
-import com.inertia.chat.modules.auth.util.JWTUtil;
+import com.inertia.chat.modules.auth.utils.JWTUtil;
 import com.inertia.chat.modules.users.entities.User;
 import com.inertia.chat.modules.users.repositories.UserRepository;
 import io.jsonwebtoken.JwtException;

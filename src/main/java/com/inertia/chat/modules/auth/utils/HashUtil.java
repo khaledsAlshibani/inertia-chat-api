@@ -1,4 +1,4 @@
-package com.inertia.chat.modules.auth.util;
+package com.inertia.chat.modules.auth.utils;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
