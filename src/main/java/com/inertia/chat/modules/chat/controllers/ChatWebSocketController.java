@@ -18,8 +18,12 @@ public class ChatWebSocketController {
 
     @MessageMapping("/chat.send")
     public void sendMessage(@Payload ChatMessageDTO chatMessage) {
+        System.out.println("The message has been recived");
+
         // Save message to database
         ChatMessageDTO savedMessage = chatService.saveMessage(chatMessage);
+
+        System.out.println("The message has been recived and saved");
         
         // Send to specific chat room
         messagingTemplate.convertAndSend(
@@ -33,7 +37,7 @@ public class ChatWebSocketController {
         // Add user to WebSocket session
         headerAccessor.getSessionAttributes().put("username", chatMessage.getSenderName());
         headerAccessor.getSessionAttributes().put("chatId", chatMessage.getChatId());
-
+        
         // Notify others in the chat room
         messagingTemplate.convertAndSend(
             "/topic/chat." + chatMessage.getChatId(),
