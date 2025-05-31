@@ -1,4 +1,4 @@
-package com.inertia.chat.common.enums;
+package com.inertia.chat.modules.users.enums;
 
 public enum UserStatus {
     ONLINE,

@@ -7,6 +7,7 @@ import com.inertia.chat.modules.auth.services.AuthService;
 import com.inertia.chat.modules.auth.utils.JWTUtil;
 import com.inertia.chat.modules.auth.utils.HashUtil;
 import com.inertia.chat.modules.users.entities.User;
+import com.inertia.chat.modules.users.enums.UserStatus;
 import com.inertia.chat.modules.users.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -144,7 +145,7 @@ public class AuthServiceImpl implements AuthService {
             if (HashUtil.sha256(refreshTokenRaw).equals(token.getToken())) {
                 // Set user status to OFFLINE on logout
                 if (token.getUser() != null) {
-                    token.getUser().setStatus(com.inertia.chat.common.enums.UserStatus.OFFLINE);
+                    token.getUser().setStatus(UserStatus.OFFLINE);
                     userRepository.save(token.getUser());
                 }
                 refreshTokenRepository.delete(token);

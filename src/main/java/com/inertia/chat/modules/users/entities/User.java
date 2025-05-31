@@ -1,7 +1,7 @@
 package com.inertia.chat.modules.users.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.inertia.chat.common.enums.UserStatus;
+import com.inertia.chat.modules.users.enums.UserStatus;
 import com.inertia.chat.modules.auth.entities.RefreshToken;
 import com.inertia.chat.modules.chat.entities.Chat;
 import com.inertia.chat.modules.chat.entities.ChatUser;
@@ -101,26 +101,5 @@ public class User implements UserDetails {
     @JsonIgnore
     public boolean isEnabled() {
         return true;
-    }
-
-    // DTO for user list responses
-    public static class UserListDTO {
-        private Long id;
-        private String username;
-        private String name;
-        private com.inertia.chat.common.enums.UserStatus status;
-
-        public UserListDTO(Long id, String username, String name, com.inertia.chat.common.enums.UserStatus status) {
-            this.id = id;
-            this.username = username;
-            this.name = name;
-            this.status = status;
-        }
-
-        // Getters and setters
-        public Long getId() { return id; }
-        public String getUsername() { return username; }
-        public String getName() { return name; }
-        public com.inertia.chat.common.enums.UserStatus getStatus() { return status; }
     }
 }

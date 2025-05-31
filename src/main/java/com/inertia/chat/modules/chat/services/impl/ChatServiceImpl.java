@@ -1,6 +1,6 @@
 package com.inertia.chat.modules.chat.services.impl;
 
-import com.inertia.chat.common.enums.Role;
+import com.inertia.chat.modules.users.enums.UserRole;
 import com.inertia.chat.modules.chat.dto.ChatMessageDTO;
 import com.inertia.chat.modules.chat.entities.Chat;
 import com.inertia.chat.modules.chat.entities.ChatUser;
@@ -18,7 +18,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -108,7 +107,7 @@ public class ChatServiceImpl implements ChatService {
         ChatUser chatUser1 = ChatUser.builder()
                 .user(user1)
                 .chat(chat)
-                .role(Role.MEMBER)
+                .role(UserRole.MEMBER)
                 .joinedAt(LocalDateTime.now())
                 .build();
         chatUserRepository.save(chatUser1);
@@ -117,7 +116,7 @@ public class ChatServiceImpl implements ChatService {
         ChatUser chatUser2 = ChatUser.builder()
                 .user(user2)
                 .chat(chat)
-                .role(Role.MEMBER)
+                .role(UserRole.MEMBER)
                 .joinedAt(LocalDateTime.now())
                 .build();
         chatUserRepository.save(chatUser2);

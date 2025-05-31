@@ -1,6 +1,6 @@
 package com.inertia.chat.modules.chat.config;
 
-import com.inertia.chat.common.enums.UserStatus;
+import com.inertia.chat.modules.users.enums.UserStatus;
 import com.inertia.chat.modules.chat.dto.ChatMessageDTO;
 import com.inertia.chat.modules.chat.enums.MessageType;
 import com.inertia.chat.modules.users.entities.User;

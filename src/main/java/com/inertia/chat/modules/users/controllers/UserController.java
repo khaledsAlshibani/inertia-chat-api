@@ -1,5 +1,6 @@
 package com.inertia.chat.modules.users.controllers;
 
+import com.inertia.chat.modules.users.dto.UserListDTO;
 import com.inertia.chat.modules.users.entities.User;
 import com.inertia.chat.modules.users.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -19,10 +20,10 @@ public class UserController {
     private final UserRepository userRepository;
 
     @GetMapping
-    public ResponseEntity<List<User.UserListDTO>> getAllUsers(@AuthenticationPrincipal User currentUser) {
-        List<User.UserListDTO> users = userRepository.findAllByIdNot(currentUser.getId())
+    public ResponseEntity<List<UserListDTO>> getAllUsers(@AuthenticationPrincipal User currentUser) {
+        List<UserListDTO> users = userRepository.findAllByIdNot(currentUser.getId())
                 .stream()
-                .map(u -> new User.UserListDTO(u.getId(), u.getUsername(), u.getName(), u.getStatus()))
+                .map(u -> new UserListDTO(u.getId(), u.getUsername(), u.getName(), u.getStatus()))
                 .collect(Collectors.toList());
         return ResponseEntity.ok(users);
     }
