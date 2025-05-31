@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>STOMP Chat Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        #messages {
+            list-style-type: none;
+            padding: 0;
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            margin: 20px 0;
+            padding: 10px;
+        }
+        #messages li {
+            margin: 5px 0;
+            padding: 5px;
+            background-color: #f0f0f0;
+            border-radius: 4px;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        input {
+            flex: 1;
+            padding: 8px;
+            font-size: 16px;
+        }
+        button {
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .connected {
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+        .disconnected {
+            background-color: #f2dede;
+            color: #a94442;
+        }
+        .token-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        .token-section h3 {
+            margin-top: 0;
+        }
+        #user-list {
+            margin-bottom: 20px;
+        }
+        #debug {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h2>WebSocket Chat Test</h2>
+    
+    <div class="token-section">
+        <h3>Authentication</h3>
+        <div class="input-group">
+            <input id="token" type="text" placeholder="Enter your access token..." />
+            <button onclick="login()">Login</button>
+        </div>
+    </div>
+
+    <div id="status" class="status disconnected">Disconnected</div>
+    <div id="user-list"></div>
+    <div id="chat-area" style="display:none;">
+    <div class="input-group">
+        <input id="message" type="text" placeholder="Type message..." />
+        <button onclick="sendMessage()">Send</button>
+    </div>
+    <ul id="messages"></ul>
+    </div>
+    <div id="debug"></div>
+
+    <script>
+        let stompClient = null;
+        const statusDiv = document.getElementById('status');
+        const debugDiv = document.getElementById('debug');
+        let token = localStorage.getItem('accessToken');
+        let reconnectAttempts = 0;
+        const maxReconnectAttempts = 3;
+        let selectedUserId = null;
+        let selectedUsername = null;
+        let chatId = null;
+        let currentUserId = null;
+        let currentUsername = null;
+        let chatSubscription = null;
+
+        function log(message) {
+            const timestamp = new Date().toISOString();
+            debugDiv.textContent = `[${timestamp}] ${message}\n` + debugDiv.textContent;
+            console.log(message);
+        }
+
+        async function fetchCurrentUser() {
+            // Decode JWT to get current user id and username
+            if (!token) return;
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            currentUserId = payload.userId;
+            currentUsername = payload.sub;
+        }
+
+        async function fetchUsers() {
+            if (!token) return;
+            try {
+                const response = await fetch('/users', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) {
+                    log('Failed to fetch users: ' + response.status + ' ' + response.statusText);
+                    document.getElementById('user-list').innerHTML = '<span style="color:red">Failed to load user list. Please login again.</span>';
+                    document.getElementById('chat-area').style.display = 'none';
+                    return;
+                }
+                const text = await response.text();
+                if (!text) {
+                    log('User list response was empty.');
+                    document.getElementById('user-list').innerHTML = '<span style="color:red">No users found or not authenticated.</span>';
+                    document.getElementById('chat-area').style.display = 'none';
+                    return;
+                }
+                let users;
+                try {
+                    users = JSON.parse(text);
+                } catch (e) {
+                    log('Failed to parse user list JSON: ' + e);
+                    document.getElementById('user-list').innerHTML = '<span style="color:red">Invalid user list response.</span>';
+                    document.getElementById('chat-area').style.display = 'none';
+                    return;
+                }
+                renderUserList(users);
+            } catch (err) {
+                log('Error fetching users: ' + err);
+                document.getElementById('user-list').innerHTML = '<span style="color:red">Error loading user list.</span>';
+                document.getElementById('chat-area').style.display = 'none';
+            }
+        }
+
+        function renderUserList(users) {
+            const userListDiv = document.getElementById('user-list');
+            userListDiv.innerHTML = '<b>Choose user to chat with:</b><br>';
+            if (users.length === 0) {
+                userListDiv.innerHTML += '<i>No other users available.</i>';
+                document.getElementById('chat-area').style.display = 'none';
+                return;
+            }
+            users.forEach(user => {
+                const btn = document.createElement('button');
+                btn.textContent = `${user.name} (${user.username}) [${user.status}]`;
+                btn.onclick = () => selectUser(user);
+                btn.style.margin = '5px';
+                userListDiv.appendChild(btn);
+            });
+        }
+
+        async function selectUser(user) {
+            selectedUserId = user.id;
+            selectedUsername = user.username;
+            document.getElementById('messages').innerHTML = '';
+            document.getElementById('chat-area').style.display = '';
+            log(`Selected user: ${user.username}`);
+            await getOrCreateChat();
+        }
+
+        async function getOrCreateChat() {
+            if (!selectedUserId) return;
+            
+            // First try to find existing chat
+            try {
+                const findResponse = await fetch(`/chats/with/${selectedUserId}`, {
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (findResponse.ok) {
+                    const result = await findResponse.json();
+                    chatId = result.data;
+                    log(`Found existing chat ID: ${chatId}`);
+                } else if (findResponse.status === 404) {
+                    // If chat doesn't exist, create new one
+                    const createResponse = await fetch(`/chats/with/${selectedUserId}`, {
+                        method: 'POST',
+                        headers: { 
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (createResponse.ok) {
+                        const result = await createResponse.json();
+                        chatId = result.data;
+                        log(`Created new chat ID: ${chatId}`);
+                    } else {
+                        throw new Error('Failed to create chat');
+                    }
+                } else {
+                    throw new Error('Failed to find chat');
+                }
+                
+                subscribeToChat();
+            } catch (error) {
+                log('Error in getOrCreateChat: ' + error);
+                alert('Error: ' + error.message);
+            }
+        }
+
+        function subscribeToChat() {
+            if (!stompClient || !stompClient.connected || !chatId) return;
+            if (chatSubscription) chatSubscription.unsubscribe();
+            log(`Subscribing to /topic/chat.${chatId}`);
+            chatSubscription = stompClient.subscribe(`/topic/chat.${chatId}`, function(message) {
+                log('Received message: ' + message.body);
+                const msg = JSON.parse(message.body);
+                const li = document.createElement('li');
+                if (msg.type === 'JOIN') {
+                    li.textContent = `${msg.senderName} has joined the chat`;
+                    li.style.color = 'green';
+                } else if (msg.type === 'LEAVE') {
+                    li.textContent = `${msg.senderName} has left the chat`;
+                    li.style.color = 'red';
+                } else {
+                    li.textContent = `${msg.senderName}: ${msg.content}`;
+                }
+                document.getElementById('messages').appendChild(li);
+            });
+
+            // Send join message
+            const joinMessage = {
+                content: `${currentUsername} has joined the chat`,
+                senderId: currentUserId,
+                senderName: currentUsername,
+                chatId: chatId,
+                type: 'JOIN'
+            };
+            stompClient.send('/app/chat.join', {
+                'Authorization': `Bearer ${token}`
+            }, JSON.stringify(joinMessage));
+        }
+
+        function login() {
+            const tokenInput = document.getElementById('token');
+            token = tokenInput.value.trim();
+            if (!token) {
+                alert('Please enter a valid token');
+                return;
+            }
+            log('Attempting to login with token...');
+            localStorage.setItem('accessToken', token);
+            if (stompClient) {
+                stompClient.disconnect();
+            }
+            reconnectAttempts = 0;
+            connect();
+        }
+
+        function connect() {
+            if (reconnectAttempts >= maxReconnectAttempts) {
+                log('Maximum reconnection attempts reached. Please try logging in again.');
+                statusDiv.textContent = 'Connection failed after multiple attempts. Please try logging in again.';
+                statusDiv.className = 'status disconnected';
+                return;
+            }
+            log('Connecting to WebSocket... (Attempt ' + (reconnectAttempts + 1) + ' of ' + maxReconnectAttempts + ')');
+            const socket = new SockJS('/ws');
+            stompClient = Stomp.over(socket);
+            stompClient.debug = function(str) { log('STOMP: ' + str); };
+            const headers = { 'Authorization': `Bearer ${token}` };
+            log('Sending connection request with headers: ' + JSON.stringify(headers));
+            stompClient.connect(headers, 
+                function(frame) {
+                    log('Connected to WebSocket successfully');
+                    statusDiv.textContent = 'Connected';
+                    statusDiv.className = 'status connected';
+                    reconnectAttempts = 0;
+                    fetchCurrentUser().then(fetchUsers);
+                },
+                function(error) {
+                    reconnectAttempts++;
+                    log('WebSocket connection error: ' + error);
+                    statusDiv.textContent = 'Connection Error: ' + error;
+                    statusDiv.className = 'status disconnected';
+                    if (reconnectAttempts < maxReconnectAttempts) {
+                        log('Attempting to reconnect in 5 seconds...');
+                    setTimeout(connect, 5000);
+                    } else {
+                        log('Maximum reconnection attempts reached. Please try logging in again.');
+                        statusDiv.textContent = 'Connection failed after multiple attempts. Please try logging in again.';
+                    }
+                }
+            );
+        }
+
+        function sendMessage() {
+            if (!stompClient || !stompClient.connected) {
+                alert('Not connected to WebSocket!');
+                return;
+            }
+            if (!chatId) {
+                alert('Please select a user to chat with.');
+                return;
+            }
+            const messageInput = document.getElementById('message');
+            const message = {
+                content: messageInput.value,
+                senderId: currentUserId,
+                senderName: currentUsername,
+                chatId: chatId,
+                type: 'CHAT'
+            };
+            log('Sending message: ' + JSON.stringify(message));
+            try {
+                stompClient.send('/app/chat.send', {
+                    'Authorization': `Bearer ${token}`
+                }, JSON.stringify(message));
+                messageInput.value = '';
+            } catch (error) {
+                log('Error sending message: ' + error);
+                alert('Error sending message: ' + error);
+            }
+        }
+
+        document.getElementById('message').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        if (token) {
+            document.getElementById('token').value = token;
+            document.getElementById('chat-area').style.display = 'none';
+            connect();
+        } else {
+            statusDiv.textContent = 'Please enter your access token to connect.';
+            statusDiv.className = 'status disconnected';
+            document.getElementById('chat-area').style.display = 'none';
+        }
+
+        // Add this function to handle page unload
+        window.onbeforeunload = function() {
+            if (stompClient && stompClient.connected && chatId) {
+                const leaveMessage = {
+                    content: `${currentUsername} has left the chat`,
+                    senderId: currentUserId,
+                    senderName: currentUsername,
+                    chatId: chatId,
+                    type: 'LEAVE'
+                };
+                stompClient.send('/app/chat.leave', {
+                    'Authorization': `Bearer ${token}`
+                }, JSON.stringify(leaveMessage));
+            }
+        };
+    </script>
+</body>
+</html>

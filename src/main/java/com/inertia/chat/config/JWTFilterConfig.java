@@ -51,10 +51,11 @@ public class JWTFilterConfig extends OncePerRequestFilter implements UserDetails
             try {
                 String email = jwtUtil.extractEmail(token);
                 if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                    UserDetails userDetails = loadUserByUsername(email);
-                    if (jwtUtil.validateToken(token, userDetails.getUsername())) {
+                    User user = userRepository.findByEmail(email)
+                        .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
+                    if (jwtUtil.validateToken(token, user.getEmail())) {
                         UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                                userDetails, null, userDetails.getAuthorities());
+                            user, null, user.getAuthorities());
                         authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                         SecurityContextHolder.getContext().setAuthentication(authToken);
                     }

@@ -1,5 +1,6 @@
 package com.inertia.chat.modules.chat.dto;
 
+import com.inertia.chat.modules.chat.enums.MessageType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,10 +20,4 @@ public class ChatMessageDTO {
     private Long chatId;
     private LocalDateTime createdAt;
     private MessageType type;
-
-    public enum MessageType {
-        CHAT,
-        JOIN,
-        LEAVE
-    }
 }

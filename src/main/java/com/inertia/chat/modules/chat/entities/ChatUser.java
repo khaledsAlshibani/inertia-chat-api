@@ -16,15 +16,17 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "chat_users")
-@IdClass(ChatUser.ChatUserId.class)
 public class ChatUser {
-    @Id
+    @EmbeddedId
+    private ChatUserId id;
+
     @ManyToOne(fetch = FetchType.LAZY)
+    @MapsId("userId")
     @JoinColumn(name = "user_id")
     private User user;
 
-    @Id
     @ManyToOne(fetch = FetchType.LAZY)
+    @MapsId("chatId")
     @JoinColumn(name = "chat_id")
     private Chat chat;
 
@@ -34,12 +36,4 @@ public class ChatUser {
 
     @Column(nullable = false)
     private LocalDateTime joinedAt = LocalDateTime.now();
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class ChatUserId implements java.io.Serializable {
-        private Long user;
-        private Long chat;
-    }
 }

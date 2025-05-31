@@ -1,5 +1,6 @@
 package com.inertia.chat.modules.chat.entities;
 
+import com.inertia.chat.modules.chat.enums.ChatType;
 import com.inertia.chat.modules.users.entities.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -29,4 +30,8 @@ public class Chat {
 
     @OneToMany(mappedBy = "chat")
     private List<Message> messages;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ChatType type = ChatType.INDIVIDUAL;
 }

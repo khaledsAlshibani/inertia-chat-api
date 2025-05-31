@@ -5,10 +5,13 @@ import com.inertia.chat.modules.chat.entities.Chat;
 import com.inertia.chat.modules.chat.entities.Message;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ChatService {
     ChatMessageDTO saveMessage(ChatMessageDTO messageDTO);
     List<Message> getChatHistory(Long chatId);
-    Chat createChat(Long userId1, Long userId2);
     List<Chat> getUserChats(Long userId);
+    
+    Optional<Chat> findOneToOneChat(Long userId1, Long userId2);
+    Chat createOneToOneChat(Long userId1, Long userId2);
 }

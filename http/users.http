@@ -1,0 +1,27 @@
+@baseUrl = {{$dotenv API_BASE_URL}}
+@contentType = application/json
+@cookieJar = api/auth
+
+### Login
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "emailOrUsername": "testuser",
+  "password": "password123"
+}
+
+### Get all users except current user
+GET {{baseUrl}}/users
+Authorization: Bearer {{login.response.body.data.accessToken}}
+
+### Find existing 1:1 chat with another user
+# Replace {userId} with the actual user ID you want to chat with
+GET {{baseUrl}}/chats/with/1
+Authorization: Bearer {{login.response.body.data.accessToken}}
+
+### Create new 1:1 chat with another user
+# Replace {userId} with the actual user ID you want to chat with
+POST {{baseUrl}}/chats/with/1
+Authorization: Bearer {{login.response.body.data.accessToken}}

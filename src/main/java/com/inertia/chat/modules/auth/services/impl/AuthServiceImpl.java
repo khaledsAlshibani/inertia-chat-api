@@ -142,6 +142,11 @@ public class AuthServiceImpl implements AuthService {
 
         for (RefreshToken token : refreshTokenRepository.findAll()) {
             if (HashUtil.sha256(refreshTokenRaw).equals(token.getToken())) {
+                // Set user status to OFFLINE on logout
+                if (token.getUser() != null) {
+                    token.getUser().setStatus(com.inertia.chat.common.enums.UserStatus.OFFLINE);
+                    userRepository.save(token.getUser());
+                }
                 refreshTokenRepository.delete(token);
                 break;
             }

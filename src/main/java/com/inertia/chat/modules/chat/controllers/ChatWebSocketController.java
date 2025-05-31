@@ -1,7 +1,7 @@
 package com.inertia.chat.modules.chat.controllers;
 
 import com.inertia.chat.modules.chat.dto.ChatMessageDTO;
-import com.inertia.chat.modules.chat.dto.ChatMessageDTO.MessageType;
+import com.inertia.chat.modules.chat.enums.MessageType;
 import com.inertia.chat.modules.chat.services.ChatService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
@@ -41,7 +41,7 @@ public class ChatWebSocketController {
     public void joinChat(@Payload ChatMessageDTO chatMessage, SimpMessageHeaderAccessor headerAccessor) {
         // Add user to WebSocket session - store chatId as Long
         headerAccessor.getSessionAttributes().put("username", chatMessage.getSenderName());
-        headerAccessor.getSessionAttributes().put("chatId", chatMessage.getChatId());  // Store as Long
+        headerAccessor.getSessionAttributes().put("chatId", chatMessage.getChatId());
         
         // Notify others in the chat room
         messagingTemplate.convertAndSend(
@@ -68,7 +68,7 @@ public class ChatWebSocketController {
                 ChatMessageDTO leaveMessage = new ChatMessageDTO();
                 leaveMessage.setType(MessageType.LEAVE);
                 leaveMessage.setSenderName(username);
-                leaveMessage.setChatId(chatId);  // Set as Long
+                leaveMessage.setChatId(chatId);
                 leaveMessage.setContent(username + " has left the chat");
                 
                 // Notify others in the chat room
@@ -83,6 +83,4 @@ public class ChatWebSocketController {
             }
         }
     }
-
-    
 }
