@@ -1,78 +1,102 @@
-# Inertia Chat App
+<h1>Inertia Chat App</h1>
 
-## Environment Setup
+- [Getting Started](#getting-started)
+  - [1. Clone the Repository](#1-clone-the-repository)
+  - [2. Set Up Configuration](#2-set-up-configuration)
+  - [2. Start the Database (PostgreSQL)](#2-start-the-database-postgresql)
+  - [3. Build and Run the Application](#3-build-and-run-the-application)
+    - [Build the Project:](#build-the-project)
+    - [Run the Application:](#run-the-application)
+- [API Testing](#api-testing)
+  - [HTTP Test Files:](#http-test-files)
+- [WebSocket \& Chat Testing](#websocket--chat-testing)
 
-1. Copy the configuration template:
+## Getting Started
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/khaledsAlshibani/inertia-chat-app.git
+cd inertia-chat-app
+```
+
+### 2. Set Up Configuration
+
+Copy the template configuration file:
+
 ```sh
 cp src/main/resources/application.yml.template src/main/resources/application.yml
+# Or use
+copy src/main/resources/application.yml.template src/main/resources/application.yml
 ```
 
-2. Configure environment variables (optional):
-```sh
-# Database
-export DB_USERNAME=postgres
-export DB_PASSWORD=postgres
+> ⚠️ Important: Never commit application.yml with sensitive data.
 
-# JWT
-export JWT_SECRET=your-secret-key-here
-export JWT_EXPIRATION=3600000
-export JWT_REFRESH_EXPIRATION=604800000
+> ⚠️ Replace jwt.secret with a strong, securely stored value.
 
-# Server
-export SERVER_PORT=9090
-```
 
-## Running the Database (PostgreSQL)
+### 2. Start the Database (PostgreSQL)
 
-To start the PostgreSQL database using Docker Compose:
+Use Docker Compose to start the PostgreSQL database:
 
 ```sh
 docker-compose up -d db
 ```
 
-## Visual Database Management (DBeaver CloudBeaver)
-
-To start DBeaver CloudBeaver for a web-based DB GUI:
+> **Optional**: Launch CloudBeaver (web-based DB GUI):
 
 ```sh
 docker-compose up -d dbeaver
 ```
 
-- Access the DBeaver UI at: [http://localhost:8978](http://localhost:8978)
-- Default login: `admin` / `admin`
-- Connect to the database with:
-  - Host: `db`
-  - Port: `5432`
-  - Database: `inertia_chat`
-  - User: `postgres`
-  - Password: `postgres`
+* Access the UI at: [http://localhost:8978](http://localhost:8978)
+* Default credentials:
 
-## Running the Application
+  * Username: `admin`
+  * Password: `admin`
 
-To start the Spring Boot application:
+> **Database Connection Details**:
 
-```sh
-./mvnw spring-boot:run
-```
+* Host: `db`
+* Port: `5432`
+* Database: `inertia_chat`
+* User: `postgres`
+* Password: `postgres`
 
-## API Testing
+### 3. Build and Run the Application
 
-The project includes HTTP request files for testing the API endpoints. You can use these with VS Code's REST Client extension or import them into Postman.
+> You can skip these steps if you're using an IDE like IntelliJ to run the application.
 
-- `http/auth.http`: Authentication endpoints (signup, login, refresh, logout)
-- `http/chat.http`: Chat-related endpoints
-
-## Cleaning and Building the Project
-
-To clean and build the Maven project run:
+#### Build the Project:
 
 ```sh
 ./mvnw clean install
 ```
 
-## Security
+#### Run the Application:
 
-The application uses JWT (JSON Web Tokens) for authentication. Make sure to:
-1. Set a strong JWT secret in your environment variables
-2. Keep your `application.yml` file secure and never commit it to version control
-3. Use environment variables for sensitive configuration in production
+```sh
+./mvnw spring-boot:run
+```
+
+---
+
+## API Testing
+
+The project includes `.http` files for testing API endpoints using [REST Client](https://marketplace.visualstudio.com/items?itemName=humao.rest-client) in VS Code or Postman.
+
+### HTTP Test Files:
+
+* `http/auth.http` – Signup, login, refresh, logout
+* `http/users.http` – User-related operations
+
+---
+
+## WebSocket & Chat Testing
+
+> Default WebSocket testing runs on port `9090`. Update URLs if your port differs.
+
+1. Log in via [http://localhost:9090/login-test.html](http://localhost:9090/login-test.html) or sign up via [http://localhost:9090/signup-test.html](http://localhost:9090/signup-test.html). Tokens will be saved locally. Or use a http client tool to login and then copy the access token and paste it in the token field in step 2.
+2. Visit [http://localhost:9090/websocket-test.html](http://localhost:9090/websocket-test.html) to see available users, and chatting.
+3. Click on a user to initiate a 1:1 chat session.
+4. If no other users are available, repeat step 1 in an incognito window or different browser to register another user. Then refresh the chat page and try again.
