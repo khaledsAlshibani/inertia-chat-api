@@ -4,6 +4,7 @@ import com.inertia.chat.modules.users.enums.UserRole;
 import com.inertia.chat.modules.chat.dto.ChatMessageDTO;
 import com.inertia.chat.modules.chat.entities.Chat;
 import com.inertia.chat.modules.chat.entities.ChatUser;
+import com.inertia.chat.modules.chat.entities.ChatUserId;
 import com.inertia.chat.modules.chat.entities.Message;
 import com.inertia.chat.modules.chat.enums.ChatType;
 import com.inertia.chat.modules.chat.enums.MessageType;
@@ -104,7 +105,9 @@ public class ChatServiceImpl implements ChatService {
         chat = chatRepository.save(chat);
 
         // Create and save ChatUser for user1
+        ChatUserId chatUserId1 = new ChatUserId();
         ChatUser chatUser1 = ChatUser.builder()
+                .id(chatUserId1)
                 .user(user1)
                 .chat(chat)
                 .role(UserRole.MEMBER)
@@ -113,7 +116,9 @@ public class ChatServiceImpl implements ChatService {
         chatUserRepository.save(chatUser1);
 
         // Create and save ChatUser for user2
+        ChatUserId chatUserId2 = new ChatUserId();
         ChatUser chatUser2 = ChatUser.builder()
+                .id(chatUserId2)
                 .user(user2)
                 .chat(chat)
                 .role(UserRole.MEMBER)
