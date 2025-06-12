@@ -9,6 +9,11 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: true
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:9090}
+    allowed-methods: ${CORS_ALLOWED_METHODS:GET,POST,PUT,DELETE,OPTIONS}
+    allowed-headers: ${CORS_ALLOWED_HEADERS:Authorization,Content-Type,X-Requested-With}
+    allow-credentials: ${CORS_ALLOW_CREDENTIALS:true}
 
 server:
   port: ${SERVER_PORT:9090}
@@ -18,4 +23,4 @@ security:
     secret: ${JWT_SECRET:your-secret-key-here}
     expiration-time: ${JWT_EXPIRATION:3600000}  # 1 hour in milliseconds
     refresh-token:
-      expiration-time: ${JWT_REFRESH_EXPIRATION:604800000}  # 7 days in milliseconds 
+      expiration-time: ${JWT_REFRESH_EXPIRATION:604800000}  # 7 days in milliseconds
