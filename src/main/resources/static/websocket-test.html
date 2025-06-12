@@ -197,47 +197,52 @@
             await getOrCreateChat();
         }
 
-        async function getOrCreateChat() {
-            if (!selectedUserId) return;
-            
-            // First try to find existing chat
-            try {
-                const findResponse = await fetch(`/chats/with/${selectedUserId}`, {
-                    method: 'GET',
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                
-                if (findResponse.ok) {
-                    const result = await findResponse.json();
-                    chatId = result.data;
-                    log(`Found existing chat ID: ${chatId}`);
-                } else if (findResponse.status === 404) {
-                    // If chat doesn't exist, create new one
-                    const createResponse = await fetch(`/chats/with/${selectedUserId}`, {
-                        method: 'POST',
-                        headers: { 
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json'
-                        }
-                    });
-                    
-                    if (createResponse.ok) {
-                        const result = await createResponse.json();
-                        chatId = result.data;
-                        log(`Created new chat ID: ${chatId}`);
-                    } else {
-                        throw new Error('Failed to create chat');
-                    }
-                } else {
-                    throw new Error('Failed to find chat');
-                }
-                
-                subscribeToChat();
-            } catch (error) {
-                log('Error in getOrCreateChat: ' + error);
-                alert('Error: ' + error.message);
-            }
-        }
+       async function getOrCreateChat() {
+  if (!selectedUserId) return;
+  
+  try {
+    const findResponse = await fetch(`/chats/with/${selectedUserId}`, {
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    if (findResponse.ok) {
+      const result = await findResponse.json();
+      chatId = result.data;
+      log(`Found existing chat ID: ${chatId}`);
+    } else if (findResponse.status === 404) {
+      // Add empty JSON body here
+      const createResponse = await fetch(`/chats/with/${selectedUserId}`, {
+        method: 'POST',
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({}) // Add empty JSON body
+      });
+      
+      if (createResponse.ok) {
+        const result = await createResponse.json();
+        chatId = result.data;
+        log(`Created new chat ID: ${chatId}`);
+      } else {
+        // Improved error logging
+        const errorBody = await createResponse.text();
+        log(`Create failed: ${createResponse.status} - ${errorBody}`);
+        throw new Error('Failed to create chat');
+      }
+    } else {
+      const errorBody = await findResponse.text();
+      log(`Find failed: ${findResponse.status} - ${errorBody}`);
+      throw new Error('Failed to find chat');
+    }
+    
+    subscribeToChat();
+  } catch (error) {
+    log('Error in getOrCreateChat: ' + error);
+    alert('Error: ' + error.message);
+  }
+}
 
         function subscribeToChat() {
             if (!stompClient || !stompClient.connected || !chatId) return;

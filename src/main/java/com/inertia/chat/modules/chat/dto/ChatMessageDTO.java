@@ -17,6 +17,7 @@ public class ChatMessageDTO {
     private String content;
     private Long senderId;
     private String senderName;
+    private String senderProfilePicture;
     private Long chatId;
     private LocalDateTime createdAt;
     private MessageType type;

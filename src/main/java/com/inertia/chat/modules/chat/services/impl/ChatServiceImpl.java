@@ -1,6 +1,7 @@
 package com.inertia.chat.modules.chat.services.impl;
 
 import com.inertia.chat.modules.users.enums.UserRole;
+import com.inertia.chat.modules.chat.dto.ChatDTO;
 import com.inertia.chat.modules.chat.dto.ChatMessageDTO;
 import com.inertia.chat.modules.chat.entities.Chat;
 import com.inertia.chat.modules.chat.entities.ChatUser;
@@ -8,6 +9,8 @@ import com.inertia.chat.modules.chat.entities.ChatUserId;
 import com.inertia.chat.modules.chat.entities.Message;
 import com.inertia.chat.modules.chat.enums.ChatType;
 import com.inertia.chat.modules.chat.enums.MessageType;
+import com.inertia.chat.modules.chat.mappers.ChatMapper;
+import com.inertia.chat.modules.chat.mappers.ChatMessageMapper;
 import com.inertia.chat.modules.chat.repositories.ChatRepository;
 import com.inertia.chat.modules.chat.repositories.MessageRepository;
 import com.inertia.chat.modules.chat.repositories.ChatUserRepository;
@@ -15,12 +18,15 @@ import com.inertia.chat.modules.chat.services.ChatService;
 import com.inertia.chat.modules.users.entities.User;
 import com.inertia.chat.modules.users.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -66,13 +72,27 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public List<Message> getChatHistory(Long chatId) {
-        return messageRepository.findByChatIdOrderByCreatedAtAsc(chatId);
+    public List<ChatMessageDTO> getChatHistory(Long chatId) {
+    List<Message> messages = messageRepository.findByChatIdOrderByCreatedAtAsc(chatId);
+
+        return messages.stream().map(message -> ChatMessageMapper.toDTO(message))
+                .collect(Collectors.toList());
     }
 
+
     @Override
-    public List<Chat> getUserChats(Long userId) {
-        return chatRepository.findByParticipantsUserId(userId);
+    public List<ChatDTO> getUserChats(Long userId) {
+        List<Chat> chats = chatRepository.findByParticipantsUserId(userId);
+
+        List<Long> chatIds = chats.stream().map(Chat::getId).toList();
+        List<Message> lastMessages = messageRepository.findLastMessagesForChatIds(chatIds);
+
+        Map<Long, Message> lastMessageMap = lastMessages.stream()
+                .collect(Collectors.toMap(m -> m.getChat().getId(), m -> m));
+
+        return chats.stream()
+                .map(chat -> ChatMapper.toDTO(chat, lastMessageMap.get(chat.getId())))
+                .collect(Collectors.toList());
     }
 
     @Override
