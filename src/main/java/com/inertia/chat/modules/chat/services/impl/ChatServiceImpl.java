@@ -79,8 +79,8 @@ public class ChatServiceImpl implements ChatService {
                 .orElseThrow(() -> new RuntimeException("Chat not found"));
 
         // Get the current user from security context
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User currentUser = userRepository.findByUsername(username)
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User currentUser = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Current user not found"));
         
         ChatUser chatUser = chatUserRepository.findByUserAndChat(currentUser, chat)
