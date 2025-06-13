@@ -24,7 +24,7 @@ public class AuthController {
             AuthResponse result = authService.signup(request);
             if (result instanceof AuthServiceImpl.AuthResponseWithRefresh authWithRefresh) {
                 CookieUtil.setRefreshTokenCookie(response, authWithRefresh.getRefreshToken());
-                return ResponseEntity.ok(EnvelopeResponse.success(new AuthResponse(authWithRefresh.getAccessToken(), authWithRefresh.getUsername(), authWithRefresh.getEmail()), "Signup successful"));
+                return ResponseEntity.ok(EnvelopeResponse.success(new AuthResponse(authWithRefresh.getUserId(), authWithRefresh.getAccessToken(), authWithRefresh.getUsername(), authWithRefresh.getEmail()), "Signup successful"));
             }
             return ResponseEntity.ok(EnvelopeResponse.success(result, "Signup successful"));
         } catch (RuntimeException e) {
@@ -40,7 +40,7 @@ public class AuthController {
             AuthResponse result = authService.login(request);
             if (result instanceof AuthServiceImpl.AuthResponseWithRefresh authWithRefresh) {
                 CookieUtil.setRefreshTokenCookie(response, authWithRefresh.getRefreshToken());
-                return ResponseEntity.ok(EnvelopeResponse.success(new AuthResponse(authWithRefresh.getAccessToken(), authWithRefresh.getUsername(), authWithRefresh.getEmail()), "Login successful"));
+                return ResponseEntity.ok(EnvelopeResponse.success(new AuthResponse(authWithRefresh.getUserId(), authWithRefresh.getAccessToken(), authWithRefresh.getUsername(), authWithRefresh.getEmail()), "Login successful"));
             }
             return ResponseEntity.ok(EnvelopeResponse.success(result, "Login successful"));
         } catch (RuntimeException e) {
@@ -59,7 +59,7 @@ public class AuthController {
             AuthResponse result = authService.refresh(refreshToken);
             if (result instanceof AuthServiceImpl.AuthResponseWithRefresh authWithRefresh) {
                 CookieUtil.setRefreshTokenCookie(response, authWithRefresh.getRefreshToken());
-                return ResponseEntity.ok(EnvelopeResponse.success(new AuthResponse(authWithRefresh.getAccessToken(), authWithRefresh.getUsername(), authWithRefresh.getEmail()), "Token refreshed successfully"));
+                return ResponseEntity.ok(EnvelopeResponse.success(new AuthResponse(authWithRefresh.getUserId(), authWithRefresh.getAccessToken(), authWithRefresh.getUsername(), authWithRefresh.getEmail()), "Token refreshed successfully"));
             }
             return ResponseEntity.ok(EnvelopeResponse.success(result, "Token refreshed successfully"));
         } catch (RuntimeException e) {

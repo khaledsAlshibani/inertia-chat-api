@@ -54,7 +54,7 @@ public class AuthServiceImpl implements AuthService {
                 .build();
         refreshTokenRepository.save(refreshToken);
 
-        return new AuthResponseWithRefresh(accessToken, user.getUsername(), user.getEmail(), refreshTokenRaw);
+        return new AuthResponseWithRefresh(user.getId(), accessToken, user.getUsername(), user.getEmail(), refreshTokenRaw);
     }
 
     @Override
@@ -88,7 +88,7 @@ public class AuthServiceImpl implements AuthService {
         refreshTokenRepository.save(refreshToken);
         log.info("Saved refresh token for user {} in DB", user.getId());
 
-        return new AuthResponseWithRefresh(accessToken, user.getUsername(), user.getEmail(), refreshTokenRaw);
+        return new AuthResponseWithRefresh(user.getId(), accessToken, user.getUsername(), user.getEmail(), refreshTokenRaw);
     }
 
     @Override
@@ -128,7 +128,7 @@ public class AuthServiceImpl implements AuthService {
                 token.setExpiresAt(LocalDateTime.now().plusDays(7));
                 refreshTokenRepository.save(token);
 
-                return new AuthResponseWithRefresh(newAccessToken, user.getUsername(), user.getEmail(), newRefreshTokenRaw);
+                return new AuthResponseWithRefresh(user.getId(), newAccessToken, user.getUsername(), user.getEmail(), newRefreshTokenRaw);
             }
         }
         throw new RuntimeException("Invalid refresh token");
@@ -156,8 +156,8 @@ public class AuthServiceImpl implements AuthService {
 
     public static class AuthResponseWithRefresh extends AuthResponse {
         private final String refreshToken;
-        public AuthResponseWithRefresh(String accessToken, String username, String email, String refreshToken) {
-            super(accessToken, username, email);
+        public AuthResponseWithRefresh(long userId, String accessToken, String username, String email, String refreshToken) {
+            super(userId, accessToken, username, email);
             this.refreshToken = refreshToken;
         }
         public String getRefreshToken() { return refreshToken; }
