@@ -59,4 +59,12 @@ public class ChatController {
         Chat chat = chatService.createOneToOneChat(currentUser.getId(), userId);
         return ResponseEntity.ok(EnvelopeResponse.success(chat.getId(), "Chat created"));
     }
+
+    @DeleteMapping("/{chatId}")
+    public ResponseEntity<EnvelopeResponse<Void>> deleteChatForUser(
+            @AuthenticationPrincipal User currentUser,
+            @PathVariable Long chatId) {
+        chatService.deleteChatForUser(chatId, currentUser.getId());
+        return ResponseEntity.ok(EnvelopeResponse.success(null, "Chat deleted for user"));
+    }
 }

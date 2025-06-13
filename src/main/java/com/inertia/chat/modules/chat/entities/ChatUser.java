@@ -36,4 +36,10 @@ public class ChatUser {
 
     @Column(nullable = false)
     private LocalDateTime joinedAt = LocalDateTime.now();
+
+    @Column(nullable = false)
+    private boolean isDeleted = false;
+
+    @Column
+    private LocalDateTime deletedAt;
 }

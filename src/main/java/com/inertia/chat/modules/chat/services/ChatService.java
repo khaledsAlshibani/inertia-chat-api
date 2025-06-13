@@ -15,4 +15,6 @@ public interface ChatService {
     
     Optional<Chat> findOneToOneChat(Long userId1, Long userId2);
     Chat createOneToOneChat(Long userId1, Long userId2);
+    
+    void deleteChatForUser(Long chatId, Long userId);
 }

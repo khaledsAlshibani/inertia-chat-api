@@ -19,6 +19,7 @@ import com.inertia.chat.modules.users.entities.User;
 import com.inertia.chat.modules.users.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -73,16 +74,43 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     public List<ChatMessageDTO> getChatHistory(Long chatId) {
-    List<Message> messages = messageRepository.findByChatIdOrderByCreatedAtAsc(chatId);
+        // Get the chat and check if it exists
+        Chat chat = chatRepository.findById(chatId)
+                .orElseThrow(() -> new RuntimeException("Chat not found"));
 
-        return messages.stream().map(message -> ChatMessageMapper.toDTO(message))
+        // Get the current user from security context
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User currentUser = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Current user not found"));
+        
+        ChatUser chatUser = chatUserRepository.findByUserAndChat(currentUser, chat)
+                .orElseThrow(() -> new RuntimeException("User is not a participant in this chat"));
+
+        List<Message> messages;
+        if (chatUser.isDeleted() && chatUser.getDeletedAt() != null) {
+            // If chat is deleted, only return messages after deletion time
+            messages = messageRepository.findByChatIdAndCreatedAtAfterOrderByCreatedAtAsc(
+                chatId, 
+                chatUser.getDeletedAt()
+            );
+        } else {
+            // If chat is not deleted, return all messages
+            messages = messageRepository.findByChatIdOrderByCreatedAtAsc(chatId);
+        }
+
+        return messages.stream()
+                .map(message -> ChatMessageMapper.toDTO(message))
                 .collect(Collectors.toList());
     }
 
 
     @Override
     public List<ChatDTO> getUserChats(Long userId) {
-        List<Chat> chats = chatRepository.findByParticipantsUserId(userId);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        List<ChatUser> chatUsers = chatUserRepository.findByUserAndIsDeletedFalse(user);
+        List<Chat> chats = chatUsers.stream().map(ChatUser::getChat).toList();
 
         List<Long> chatIds = chats.stream().map(Chat::getId).toList();
         List<Message> lastMessages = messageRepository.findLastMessagesForChatIds(chatIds);
@@ -147,5 +175,17 @@ public class ChatServiceImpl implements ChatService {
         chatUserRepository.save(chatUser2);
 
         return chat;
+    }
+
+    @Override
+    @Transactional
+    public void deleteChatForUser(Long chatId, Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        Chat chat = chatRepository.findById(chatId)
+                .orElseThrow(() -> new RuntimeException("Chat not found"));
+        
+        chatUserRepository.markAsDeleted(user, chat);
     }
 }

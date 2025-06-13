@@ -83,6 +83,23 @@
             max-height: 300px;
             overflow-y: auto;
         }
+        .chat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .delete-chat-btn {
+            background-color: #dc3545;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .delete-chat-btn:hover {
+            background-color: #c82333;
+        }
     </style>
 </head>
 <body>
@@ -99,11 +116,15 @@
     <div id="status" class="status disconnected">Disconnected</div>
     <div id="user-list"></div>
     <div id="chat-area" style="display:none;">
-    <div class="input-group">
-        <input id="message" type="text" placeholder="Type message..." />
-        <button onclick="sendMessage()">Send</button>
-    </div>
-    <ul id="messages"></ul>
+        <div class="chat-header">
+            <h3 id="chat-title">Chat with: <span id="selected-username"></span></h3>
+            <button class="delete-chat-btn" onclick="deleteChat()">Delete Chat</button>
+        </div>
+        <div class="input-group">
+            <input id="message" type="text" placeholder="Type message..." />
+            <button onclick="sendMessage()">Send</button>
+        </div>
+        <ul id="messages"></ul>
     </div>
     <div id="debug"></div>
 
@@ -128,7 +149,6 @@
         }
 
         async function fetchCurrentUser() {
-            // Decode JWT to get current user id and username
             if (!token) return;
             const payload = JSON.parse(atob(token.split('.')[1]));
             currentUserId = payload.userId;
@@ -191,58 +211,105 @@
         async function selectUser(user) {
             selectedUserId = user.id;
             selectedUsername = user.username;
+            document.getElementById('selected-username').textContent = user.username;
             document.getElementById('messages').innerHTML = '';
             document.getElementById('chat-area').style.display = '';
             log(`Selected user: ${user.username}`);
             await getOrCreateChat();
         }
 
-       async function getOrCreateChat() {
-  if (!selectedUserId) return;
-  
-  try {
-    const findResponse = await fetch(`/chats/with/${selectedUserId}`, {
-      method: 'GET',
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    
-    if (findResponse.ok) {
-      const result = await findResponse.json();
-      chatId = result.data;
-      log(`Found existing chat ID: ${chatId}`);
-    } else if (findResponse.status === 404) {
-      // Add empty JSON body here
-      const createResponse = await fetch(`/chats/with/${selectedUserId}`, {
-        method: 'POST',
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({}) // Add empty JSON body
-      });
-      
-      if (createResponse.ok) {
-        const result = await createResponse.json();
-        chatId = result.data;
-        log(`Created new chat ID: ${chatId}`);
-      } else {
-        // Improved error logging
-        const errorBody = await createResponse.text();
-        log(`Create failed: ${createResponse.status} - ${errorBody}`);
-        throw new Error('Failed to create chat');
-      }
-    } else {
-      const errorBody = await findResponse.text();
-      log(`Find failed: ${findResponse.status} - ${errorBody}`);
-      throw new Error('Failed to find chat');
-    }
-    
-    subscribeToChat();
-  } catch (error) {
-    log('Error in getOrCreateChat: ' + error);
-    alert('Error: ' + error.message);
-  }
-}
+        async function getOrCreateChat() {
+            if (!selectedUserId) return;
+            
+            try {
+                log(`Attempting to find chat with user ${selectedUserId}`);
+                const findResponse = await fetch(`/chats/with/${selectedUserId}`, {
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                log(`Find chat response status: ${findResponse.status}`);
+                const responseText = await findResponse.text();
+                log(`Find chat response body: ${responseText}`);
+                
+                if (findResponse.ok) {
+                    const result = JSON.parse(responseText);
+                    chatId = result.data;
+                    log(`Found existing chat ID: ${chatId}`);
+                } else if (findResponse.status === 404) {
+                    log('Chat not found, creating new chat...');
+                    const createResponse = await fetch(`/chats/with/${selectedUserId}`, {
+                        method: 'POST',
+                        headers: { 
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({})
+                    });
+                    
+                    log(`Create chat response status: ${createResponse.status}`);
+                    const createResponseText = await createResponse.text();
+                    log(`Create chat response body: ${createResponseText}`);
+                    
+                    if (createResponse.ok) {
+                        const result = JSON.parse(createResponseText);
+                        chatId = result.data;
+                        log(`Created new chat ID: ${chatId}`);
+                    } else {
+                        log(`Create failed: ${createResponse.status} - ${createResponseText}`);
+                        throw new Error(`Failed to create chat: ${createResponseText}`);
+                    }
+                } else {
+                    log(`Find failed: ${findResponse.status} - ${responseText}`);
+                    throw new Error(`Failed to find chat: ${responseText}`);
+                }
+                
+                subscribeToChat();
+            } catch (error) {
+                log('Error in getOrCreateChat: ' + error);
+                alert('Error: ' + error.message);
+            }
+        }
+
+        async function deleteChat() {
+            if (!chatId) {
+                alert('No chat selected');
+                return;
+            }
+
+            if (!confirm('Are you sure you want to delete this chat? This will only delete it from your view.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/chats/${chatId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    log('Chat deleted successfully');
+                    // Clean up WebSocket subscription
+                    if (chatSubscription) {
+                        chatSubscription.unsubscribe();
+                        chatSubscription = null;
+                    }
+                    // Clear chat area
+                    document.getElementById('messages').innerHTML = '';
+                    document.getElementById('chat-area').style.display = 'none';
+                    chatId = null;
+                    // Refresh user list
+                    fetchUsers();
+                } else {
+                    const errorBody = await response.text();
+                    log(`Failed to delete chat: ${response.status} - ${errorBody}`);
+                    alert('Failed to delete chat');
+                }
+            } catch (error) {
+                log('Error deleting chat: ' + error);
+                alert('Error deleting chat: ' + error);
+            }
+        }
 
         function subscribeToChat() {
             if (!stompClient || !stompClient.connected || !chatId) return;
@@ -321,7 +388,7 @@
                     statusDiv.className = 'status disconnected';
                     if (reconnectAttempts < maxReconnectAttempts) {
                         log('Attempting to reconnect in 5 seconds...');
-                    setTimeout(connect, 5000);
+                        setTimeout(connect, 5000);
                     } else {
                         log('Maximum reconnection attempts reached. Please try logging in again.');
                         statusDiv.textContent = 'Connection failed after multiple attempts. Please try logging in again.';
@@ -375,7 +442,6 @@
             document.getElementById('chat-area').style.display = 'none';
         }
 
-        // Add this function to handle page unload
         window.onbeforeunload = function() {
             if (stompClient && stompClient.connected && chatId) {
                 const leaveMessage = {
