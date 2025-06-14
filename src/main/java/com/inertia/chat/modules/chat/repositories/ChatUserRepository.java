@@ -21,4 +21,8 @@ public interface ChatUserRepository extends JpaRepository<ChatUser, ChatUserId> 
     @Modifying
     @Query("UPDATE ChatUser cu SET cu.isDeleted = true, cu.deletedAt = CURRENT_TIMESTAMP WHERE cu.user = ?1 AND cu.chat = ?2")
     void markAsDeleted(User user, Chat chat);
+
+    @Modifying
+    @Query("UPDATE ChatUser cu SET cu.isDeleted = false WHERE cu.user = ?1 AND cu.chat = ?2 AND cu.deletedAt IS NOT NULL")
+    void restoreChat(User user, Chat chat);
 }

@@ -17,4 +17,5 @@ public interface ChatService {
     Chat createOneToOneChat(Long userId1, Long userId2);
     
     void deleteChatForUser(Long chatId, Long userId);
+    void restoreChatForUser(Long chatId, Long userId);
 }

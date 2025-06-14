@@ -87,14 +87,15 @@ public class ChatServiceImpl implements ChatService {
                 .orElseThrow(() -> new RuntimeException("User is not a participant in this chat"));
 
         List<Message> messages;
-        if (chatUser.isDeleted() && chatUser.getDeletedAt() != null) {
-            // If chat is deleted, only return messages after deletion time
+        if (chatUser.getDeletedAt() != null) {
+            // If chat has a deletion timestamp (whether currently deleted or restored),
+            // only return messages after deletion time
             messages = messageRepository.findByChatIdAndCreatedAtAfterOrderByCreatedAtAsc(
                 chatId, 
                 chatUser.getDeletedAt()
             );
         } else {
-            // If chat is not deleted, return all messages
+            // If chat has never been deleted, return all messages
             messages = messageRepository.findByChatIdOrderByCreatedAtAsc(chatId);
         }
 
@@ -119,7 +120,21 @@ public class ChatServiceImpl implements ChatService {
                 .collect(Collectors.toMap(m -> m.getChat().getId(), m -> m));
 
         return chats.stream()
-                .map(chat -> ChatMapper.toDTO(chat, lastMessageMap.get(chat.getId())))
+                .map(chat -> {
+                    // Get the chat user record to check deletion timestamp
+                    ChatUser chatUser = chatUserRepository.findByUserAndChat(user, chat)
+                            .orElseThrow(() -> new RuntimeException("User is not a participant in this chat"));
+                    
+                    Message lastMessage = lastMessageMap.get(chat.getId());
+                    
+                    // If there's a deletion timestamp and the last message is before it, don't show the message
+                    if (chatUser.getDeletedAt() != null && lastMessage != null && 
+                        lastMessage.getCreatedAt().isBefore(chatUser.getDeletedAt())) {
+                        lastMessage = null;
+                    }
+                    
+                    return ChatMapper.toDTO(chat, lastMessage);
+                })
                 .collect(Collectors.toList());
     }
 
@@ -134,7 +149,27 @@ public class ChatServiceImpl implements ChatService {
                             ((participants.get(0).getUser().getId().equals(userId1) && participants.get(1).getUser().getId().equals(userId2)) ||
                              (participants.get(0).getUser().getId().equals(userId2) && participants.get(1).getUser().getId().equals(userId1)));
                 })
-                .findFirst();
+                .findFirst()
+                .map(chat -> {
+                    // Get the current user from security context
+                    String email = SecurityContextHolder.getContext().getAuthentication().getName();
+                    User currentUser = userRepository.findByEmail(email)
+                            .orElseThrow(() -> new RuntimeException("Current user not found"));
+                    
+                    // Find the chat user record for the current user
+                    ChatUser chatUser = chatUserRepository.findByUserAndChat(currentUser, chat)
+                            .orElseThrow(() -> new RuntimeException("User is not a participant in this chat"));
+                    
+                    // If the chat is deleted for the current user, restore it
+                    if (chatUser.isDeleted() && chatUser.getDeletedAt() != null) {
+                        chatUserRepository.restoreChat(currentUser, chat);
+                        // Refresh the chat user to get updated state
+                        chatUser = chatUserRepository.findByUserAndChat(currentUser, chat)
+                                .orElseThrow(() -> new RuntimeException("User is not a participant in this chat"));
+                    }
+                    
+                    return chat;
+                });
     }
 
     @Override
@@ -187,5 +222,17 @@ public class ChatServiceImpl implements ChatService {
                 .orElseThrow(() -> new RuntimeException("Chat not found"));
         
         chatUserRepository.markAsDeleted(user, chat);
+    }
+
+    @Override
+    @Transactional
+    public void restoreChatForUser(Long chatId, Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        Chat chat = chatRepository.findById(chatId)
+                .orElseThrow(() -> new RuntimeException("Chat not found"));
+        
+        chatUserRepository.restoreChat(user, chat);
     }
 }
