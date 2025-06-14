@@ -8,9 +8,9 @@ import com.inertia.chat.modules.chat.entities.ChatUser;
 import com.inertia.chat.modules.chat.entities.ChatUserId;
 import com.inertia.chat.modules.chat.entities.Message;
 import com.inertia.chat.modules.chat.enums.ChatType;
-import com.inertia.chat.modules.chat.enums.MessageType;
 import com.inertia.chat.modules.chat.mappers.ChatMapper;
 import com.inertia.chat.modules.chat.mappers.ChatMessageMapper;
+import com.inertia.chat.modules.chat.repositories.AttachmentRepository;
 import com.inertia.chat.modules.chat.repositories.ChatRepository;
 import com.inertia.chat.modules.chat.repositories.MessageRepository;
 import com.inertia.chat.modules.chat.repositories.ChatUserRepository;
@@ -37,6 +37,7 @@ public class ChatServiceImpl implements ChatService {
     private final MessageRepository messageRepository;
     private final UserRepository userRepository;
     private final ChatUserRepository chatUserRepository;
+    private final AttachmentRepository attachmentRepository;
 
     @Override
     @Transactional
@@ -53,23 +54,23 @@ public class ChatServiceImpl implements ChatService {
                     return chatRepository.save(newChat);
                 });
 
-        Message message = Message.builder()
-                .content(messageDTO.getContent())
-                .sender(sender)
-                .chat(chat)
-                .build();
+        Message message = ChatMessageMapper.toEntity(messageDTO);
+        message.setSender(sender);
+        message.setChat(chat);
 
         Message savedMessage = messageRepository.save(message);
         
-        return ChatMessageDTO.builder()
-                .id(savedMessage.getId())
-                .content(savedMessage.getContent())
-                .senderId(savedMessage.getSender().getId())
-                .senderName(savedMessage.getSender().getUsername())
-                .chatId(savedMessage.getChat().getId())
-                .createdAt(savedMessage.getCreatedAt())
-                .type(MessageType.CHAT)
-                .build();
+        if (messageDTO.getAttachments() != null) {
+            // Save attachments if any
+            messageDTO.getAttachments().stream()
+                .map(ChatMessageMapper::toEntity)
+                .forEach(a -> {
+                        a.setMessage(savedMessage);
+                        attachmentRepository.save(a);
+            });
+        }
+
+        return ChatMessageMapper.toDTO(savedMessage);
     }
 
     @Override
