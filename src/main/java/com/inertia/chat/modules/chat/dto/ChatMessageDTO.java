@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -21,4 +22,5 @@ public class ChatMessageDTO {
     private Long chatId;
     private LocalDateTime createdAt;
     private MessageType type;
+    private List<AttachmentDTO> attachments;
 }
