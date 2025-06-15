@@ -11,6 +11,7 @@ public enum AttachmentType {
     GIF  (List.of("image/gif")),
     VIDEO(List.of("video/mp4", "video/quicktime")),
     AUDIO(List.of("audio/mpeg", "audio/ogg")),
+    VOICE(List.of("audio/webm", "audio/mp4")),
     DOCUMENT(List.of(
       "application/pdf", 
       "text/plain",
