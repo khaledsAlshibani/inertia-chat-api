@@ -1,7 +1,10 @@
 package com.inertia.chat.modules.chat.controllers;
 
 import com.inertia.chat.modules.chat.dto.ChatMessageDTO;
+import com.inertia.chat.modules.chat.entities.Message;
 import com.inertia.chat.modules.chat.enums.MessageType;
+import com.inertia.chat.modules.chat.events.MessageCreatedEvent;
+import com.inertia.chat.modules.chat.mappers.ChatMessageMapper;
 import com.inertia.chat.modules.chat.services.ChatService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
@@ -83,4 +86,11 @@ public class ChatWebSocketController {
             }
         }
     }
+
+   @EventListener
+public void onMessageCreated(MessageCreatedEvent ev) {
+    messagingTemplate.convertAndSend("/topic/chat." + ev.getMessageDTO().getChatId(), ev.getMessageDTO());
 }
+}
+
+ 

@@ -14,7 +14,8 @@ spring:
     allowed-methods: ${CORS_ALLOWED_METHODS:GET,POST,PUT,DELETE,OPTIONS}
     allowed-headers: ${CORS_ALLOWED_HEADERS:Authorization,Content-Type,X-Requested-With}
     allow-credentials: ${CORS_ALLOW_CREDENTIALS:true}
-
+  profiles:
+    active: dev
 server:
   port: ${SERVER_PORT:9090}
 

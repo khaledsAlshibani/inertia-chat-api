@@ -9,12 +9,11 @@ import com.inertia.chat.common.dto.EnvelopeResponse;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
-
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 
 
 @RestController
@@ -30,9 +29,22 @@ public class ChatController {
         List<ChatMessageDTO> messages = chatService.getChatHistory(id);
         return ResponseEntity.ok(EnvelopeResponse.success(messages, "Messages found"));
     }
-    public String getMethodName(@RequestParam String param) {
-        return new String();
-    }
+
+    @PostMapping(value = "/{chatId}/messages", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+        public ResponseEntity<EnvelopeResponse<ChatMessageDTO>> send(
+                @AuthenticationPrincipal User user,
+                @PathVariable Long chatId,
+                @RequestParam(required = false) String content,
+                @RequestPart(required = false) List<MultipartFile> attachments
+        ) {
+            try {
+                ChatMessageDTO savedMessage = chatService.saveMessage(user.getId(), chatId, content, attachments);
+                return ResponseEntity.ok(EnvelopeResponse.success(savedMessage, "Message sent successfully"));
+            } catch (Exception e) {
+                return ResponseEntity.badRequest()
+                        .body(EnvelopeResponse.error(List.of("Failed to send message: " + e.getMessage())));
+            }
+        }
 
     @GetMapping("/all")
     public ResponseEntity<EnvelopeResponse<List<ChatDTO>>> getAllChats(
@@ -67,4 +79,5 @@ public class ChatController {
         chatService.deleteChatForUser(chatId, currentUser.getId());
         return ResponseEntity.ok(EnvelopeResponse.success(null, "Chat deleted for user"));
     }
+
 }

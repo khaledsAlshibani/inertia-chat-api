@@ -8,8 +8,12 @@ import com.inertia.chat.modules.chat.entities.Message;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.web.multipart.MultipartFile;
+
 public interface ChatService {
     ChatMessageDTO saveMessage(ChatMessageDTO messageDTO);
+    ChatMessageDTO saveMessage(Long senderId, Long chatId, String content, List<MultipartFile> attachments);
+
     List<ChatMessageDTO> getChatHistory(Long chatId);
     List<ChatDTO> getUserChats(Long userId);
     

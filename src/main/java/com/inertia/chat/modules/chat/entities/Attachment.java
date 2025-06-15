@@ -1,5 +1,7 @@
 package com.inertia.chat.modules.chat.entities;
 
+import java.time.LocalDateTime;
+
 import com.inertia.chat.modules.chat.enums.AttachmentType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -26,9 +28,21 @@ public class Attachment {
     @Column(nullable = false, length = 20)
     private AttachmentType type;
 
+    @Column(nullable = false)
+    private Long size;
+
     @Column(nullable = false, length = 1024)
     private String url;
 
     @Column(length = 255)
     private String fileName;
+
+    @Column(nullable = false)
+    private LocalDateTime uploadedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        uploadedAt = LocalDateTime.now();
+    }
+
 }
