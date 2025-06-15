@@ -7,16 +7,43 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public enum AttachmentType {
-    IMAGE(List.of("image/png", "image/jpeg")),  
+    IMAGE(List.of(
+        "image/png", 
+        "image/jpeg", 
+        "image/jpg",
+        "image/webp",
+        "image/bmp",
+        "image/tiff",
+        "image/svg+xml"
+    )),  
     GIF  (List.of("image/gif")),
     VIDEO(List.of("video/mp4", "video/quicktime")),
-    AUDIO(List.of("audio/mpeg", "audio/ogg")),
-    VOICE(List.of("audio/webm", "audio/mp4")),
+    AUDIO(List.of(
+        "audio/mpeg", 
+        "audio/ogg",
+        "audio/wav",
+        "audio/aac",
+        "audio/x-m4a",
+        "audio/flac"
+    )),
+    VOICE(List.of(
+        "audio/webm", 
+        "audio/mp4"
+    )),
     DOCUMENT(List.of(
-      "application/pdf", 
-      "text/plain",
-      "application/msword",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        "application/pdf", 
+        "text/plain",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.ms-excel",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.ms-powerpoint",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "text/csv",
+        "application/rtf",
+        "application/xml",
+        "text/html",
+        "application/json"
     ));
 
     private final List<String> mimes;
