@@ -8,9 +8,9 @@ POST {{baseUrl}}/auth/signup
 Content-Type: {{contentType}}
 
 {
-  "email": "khaled@example.com",
-  "username": "khaled",
-  "name": "Khaled",
+  "email": "ahmed@example.com",
+  "username": "ahmed",
+  "name": "ahmed",
   "password": "password123"
 }
 

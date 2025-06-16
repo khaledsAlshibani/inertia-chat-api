@@ -8,13 +8,38 @@ POST {{baseUrl}}/auth/login
 Content-Type: {{contentType}}
 
 {
-  "emailOrUsername": "testuser",
+  "emailOrUsername": "updatedusername",
   "password": "password123"
 }
 
 ### Get all users except current user
 GET {{baseUrl}}/users
 Authorization: Bearer {{login.response.body.data.accessToken}}
+
+### Get current user profile
+GET {{baseUrl}}/users/me
+Authorization: Bearer {{login.response.body.data.accessToken}}
+
+### Update user profile
+PUT {{baseUrl}}/users/me
+Content-Type: {{contentType}}
+Authorization: Bearer {{login.response.body.data.accessToken}}
+
+{
+    "name": "Updated Name",
+    "email": "updated.email@example.com",
+    "username": "ahmed",
+    "profilePicture": "https://pbs.twimg.com/profile_images/1932833196170756096/LEGQ4VrB_400x400.jpg"
+}
+
+### Delete user profile
+DELETE {{baseUrl}}/users/me
+Content-Type: {{contentType}}
+Authorization: Bearer {{login.response.body.data.accessToken}}
+
+{
+    "password": "password123"
+}
 
 ### Find existing 1:1 chat with another user
 # Replace {userId} with the actual user ID you want to chat with
