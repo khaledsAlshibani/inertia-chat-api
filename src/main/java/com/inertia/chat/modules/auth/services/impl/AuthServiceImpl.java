@@ -9,6 +9,7 @@ import com.inertia.chat.modules.auth.utils.HashUtil;
 import com.inertia.chat.modules.users.entities.User;
 import com.inertia.chat.modules.users.enums.UserStatus;
 import com.inertia.chat.modules.users.repositories.UserRepository;
+import com.inertia.chat.modules.users.services.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -26,6 +27,7 @@ public class AuthServiceImpl implements AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JWTUtil jwtUtil;
+    private final UserService userService;
 
     @Override
     @Transactional
@@ -53,6 +55,8 @@ public class AuthServiceImpl implements AuthService {
                 .expiresAt(LocalDateTime.now().plusDays(7))
                 .build();
         refreshTokenRepository.save(refreshToken);
+
+        userService.setUserStatus(user, UserStatus.ONLINE);
 
         return new AuthResponseWithRefresh(user.getId(), accessToken, user.getUsername(), user.getEmail(), refreshTokenRaw);
     }
@@ -87,6 +91,8 @@ public class AuthServiceImpl implements AuthService {
                 .build();
         refreshTokenRepository.save(refreshToken);
         log.info("Saved refresh token for user {} in DB", user.getId());
+
+        userService.setUserStatus(user, UserStatus.ONLINE);
 
         return new AuthResponseWithRefresh(user.getId(), accessToken, user.getUsername(), user.getEmail(), refreshTokenRaw);
     }
@@ -145,8 +151,7 @@ public class AuthServiceImpl implements AuthService {
             if (HashUtil.sha256(refreshTokenRaw).equals(token.getToken())) {
                 // Set user status to OFFLINE on logout
                 if (token.getUser() != null) {
-                    token.getUser().setStatus(UserStatus.OFFLINE);
-                    userRepository.save(token.getUser());
+                    userService.setUserStatus(token.getUser(), UserStatus.OFFLINE);
                 }
                 refreshTokenRepository.delete(token);
                 break;

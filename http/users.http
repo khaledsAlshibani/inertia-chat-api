@@ -8,7 +8,7 @@ POST {{baseUrl}}/auth/login
 Content-Type: {{contentType}}
 
 {
-  "emailOrUsername": "updatedusername",
+  "emailOrUsername": "ahmed",
   "password": "password123"
 }
 
@@ -20,6 +20,15 @@ Authorization: Bearer {{login.response.body.data.accessToken}}
 GET {{baseUrl}}/users/me
 Authorization: Bearer {{login.response.body.data.accessToken}}
 
+### Update user status
+PATCH {{baseUrl}}/users/me/status
+Content-Type: {{contentType}}
+Authorization: Bearer {{login.response.body.data.accessToken}}
+
+{
+    "status": "OFFLINE"
+}
+
 ### Update user profile
 PUT {{baseUrl}}/users/me
 Content-Type: {{contentType}}
@@ -28,8 +37,8 @@ Authorization: Bearer {{login.response.body.data.accessToken}}
 {
     "name": "Updated Name",
     "email": "updated.email@example.com",
-    "username": "ahmed",
-    "profilePicture": "https://pbs.twimg.com/profile_images/1932833196170756096/LEGQ4VrB_400x400.jpg"
+    "username": "updatedusername",
+    "profilePicture": "https://example.com/profile.jpg"
 }
 
 ### Delete user profile

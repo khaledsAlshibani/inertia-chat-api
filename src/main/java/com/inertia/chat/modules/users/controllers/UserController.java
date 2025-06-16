@@ -3,6 +3,7 @@ package com.inertia.chat.modules.users.controllers;
 import com.inertia.chat.common.dto.EnvelopeResponse;
 import com.inertia.chat.modules.users.dto.DeleteProfileDTO;
 import com.inertia.chat.modules.users.dto.UpdateProfileDTO;
+import com.inertia.chat.modules.users.dto.UpdateStatusDTO;
 import com.inertia.chat.modules.users.dto.UserListDTO;
 import com.inertia.chat.modules.users.dto.UserProfileDTO;
 import com.inertia.chat.modules.users.entities.User;
@@ -45,6 +46,20 @@ public class UserController {
             return ResponseEntity.ok(EnvelopeResponse.success(
                 userService.updateProfile(currentUser, updateProfileDTO),
                 "Profile updated successfully"
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(EnvelopeResponse.error(List.of(e.getMessage())));
+        }
+    }
+
+    @PatchMapping("/me/status")
+    public ResponseEntity<EnvelopeResponse<UserListDTO>> updateStatus(
+            @AuthenticationPrincipal User currentUser,
+            @Valid @RequestBody UpdateStatusDTO updateStatusDTO) {
+        try {
+            return ResponseEntity.ok(EnvelopeResponse.success(
+                userService.updateStatus(currentUser, updateStatusDTO),
+                "Status updated successfully"
             ));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(EnvelopeResponse.error(List.of(e.getMessage())));
