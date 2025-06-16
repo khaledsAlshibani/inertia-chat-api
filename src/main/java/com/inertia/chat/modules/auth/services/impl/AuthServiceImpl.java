@@ -42,8 +42,8 @@ public class AuthServiceImpl implements AuthService {
         user = userRepository.save(user);
         log.info("User signed up successfully");
 
-        String accessToken = jwtUtil.generateAccessToken(user.getUsername(), user.getId());
-        String refreshTokenRaw = jwtUtil.generateRefreshToken(user.getUsername(), user.getId());
+        String accessToken = jwtUtil.generateAccessToken(user.getEmail(), user.getId());
+        String refreshTokenRaw = jwtUtil.generateRefreshToken(user.getEmail(), user.getId());
         String refreshTokenHash = HashUtil.sha256(refreshTokenRaw);
 
         RefreshToken refreshToken = RefreshToken.builder()
@@ -72,8 +72,8 @@ public class AuthServiceImpl implements AuthService {
         // Delete any existing refresh tokens for this user
         refreshTokenRepository.deleteByUserId(user.getId());
 
-        String accessToken = jwtUtil.generateAccessToken(user.getUsername(), user.getId());
-        String refreshTokenRaw = jwtUtil.generateRefreshToken(user.getUsername(), user.getId());
+        String accessToken = jwtUtil.generateAccessToken(user.getEmail(), user.getId());
+        String refreshTokenRaw = jwtUtil.generateRefreshToken(user.getEmail(), user.getId());
         String refreshTokenHash = HashUtil.sha256(refreshTokenRaw);
         
         log.info("Generated refresh token (raw): {}", refreshTokenRaw);
@@ -118,8 +118,8 @@ public class AuthServiceImpl implements AuthService {
                 }
 
                 User user = token.getUser();
-                String newAccessToken = jwtUtil.generateAccessToken(user.getUsername(), user.getId());
-                String newRefreshTokenRaw = jwtUtil.generateRefreshToken(user.getUsername(), user.getId());
+                String newAccessToken = jwtUtil.generateAccessToken(user.getEmail(), user.getId());
+                String newRefreshTokenRaw = jwtUtil.generateRefreshToken(user.getEmail(), user.getId());
                 String newRefreshTokenHash = HashUtil.sha256(newRefreshTokenRaw);
                 
                 // Update the existing token
