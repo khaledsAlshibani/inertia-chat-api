@@ -22,11 +22,14 @@ import com.inertia.chat.modules.chat.services.AttachmentService;
 import com.inertia.chat.modules.chat.services.ChatService;
 import com.inertia.chat.modules.users.entities.User;
 import com.inertia.chat.modules.users.repositories.UserRepository;
+
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
 import org.apache.coyote.BadRequestException;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.crossstore.ChangeSetPersister.NotFoundException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -125,15 +128,15 @@ public class ChatServiceImpl implements ChatService {
         public List<ChatMessageDTO> getChatHistory(Long chatId) {
                 // Get the chat and check if it exists
                 Chat chat = chatRepository.findById(chatId)
-                                .orElseThrow(() -> new RuntimeException("Chat not found"));
+                                .orElseThrow(() -> new EntityNotFoundException("Chat not found"));
 
                 // Get the current user from security context
                 String username = SecurityContextHolder.getContext().getAuthentication().getName();
                 User currentUser = userRepository.findByUsername(username)
-                                .orElseThrow(() -> new RuntimeException("Current user not found"));
+                                .orElseThrow(() -> new EntityNotFoundException("Current user not found"));
 
                 ChatUser chatUser = chatUserRepository.findByUserAndChat(currentUser, chat)
-                                .orElseThrow(() -> new RuntimeException("User is not a participant in this chat"));
+                                .orElseThrow(() -> new AccessDeniedException("User is not a participant in this chat"));
 
                 List<Message> messages;
                 if (chatUser.getDeletedAt() != null) {

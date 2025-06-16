@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
+import jakarta.persistence.EntityNotFoundException;
+
 import java.util.Collections;
 
 @ControllerAdvice
@@ -26,6 +28,13 @@ public class GlobalExceptionHandler {
     public EnvelopeResponse<?> handleAccessDeniedException(AccessDeniedException ex) {
         return EnvelopeResponse.error(Collections.singletonList("Access denied."));
     }
+    
+    @ExceptionHandler(EntityNotFoundException.class)
+    public ResponseEntity<EnvelopeResponse<Object>> handleNotFound(EntityNotFoundException ex) {
+        return ResponseEntity
+            .status(HttpStatus.NOT_FOUND)
+            .body(EnvelopeResponse.error(Collections.singletonList(ex.getMessage())));
+    }
 
     @ExceptionHandler(Exception.class)
     @ResponseBody
@@ -33,4 +42,5 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(EnvelopeResponse.error(Collections.singletonList(ex.getMessage())));
     }
+
 }
