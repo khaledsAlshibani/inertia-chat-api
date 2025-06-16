@@ -1,6 +1,10 @@
 package com.inertia.chat.modules.users.controllers;
 
 import com.inertia.chat.common.dto.EnvelopeResponse;
+import com.inertia.chat.modules.auth.dto.AuthResponse;
+import com.inertia.chat.modules.auth.services.AuthService;
+import com.inertia.chat.modules.auth.services.impl.AuthServiceImpl;
+import com.inertia.chat.modules.auth.utils.CookieUtil;
 import com.inertia.chat.modules.users.dto.DeleteProfileDTO;
 import com.inertia.chat.modules.users.dto.UpdateProfileDTO;
 import com.inertia.chat.modules.users.dto.UpdateStatusDTO;
@@ -8,6 +12,7 @@ import com.inertia.chat.modules.users.dto.UserListDTO;
 import com.inertia.chat.modules.users.dto.UserProfileDTO;
 import com.inertia.chat.modules.users.entities.User;
 import com.inertia.chat.modules.users.services.UserService;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -15,12 +20,14 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/users")
 @RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
+    private final AuthService authService;
 
     @GetMapping
     public ResponseEntity<EnvelopeResponse<List<UserListDTO>>> getAllUsers(@AuthenticationPrincipal User currentUser) {
@@ -39,12 +46,30 @@ public class UserController {
     }
 
     @PutMapping("/me")
-    public ResponseEntity<EnvelopeResponse<UserListDTO>> updateProfile(
+    public ResponseEntity<EnvelopeResponse<Map<String, Object>>> updateProfile(
             @AuthenticationPrincipal User currentUser,
-            @Valid @RequestBody UpdateProfileDTO updateProfileDTO) {
+            @Valid @RequestBody UpdateProfileDTO updateProfileDTO,
+            HttpServletResponse response) {
         try {
+            UserProfileDTO updatedProfile = userService.getProfile(currentUser);
+            userService.updateProfile(currentUser, updateProfileDTO);
+            AuthResponse result = authService.refreshTokensForUser(currentUser);
+            
+            if (result instanceof AuthServiceImpl.AuthResponseWithRefresh authWithRefresh) {
+                CookieUtil.setRefreshTokenCookie(response, authWithRefresh.getRefreshToken());
+                return ResponseEntity.ok(EnvelopeResponse.success(
+                    Map.of(
+                        "user", updatedProfile,
+                        "accessToken", authWithRefresh.getAccessToken()
+                    ),
+                    "Profile updated successfully"
+                ));
+            }
             return ResponseEntity.ok(EnvelopeResponse.success(
-                userService.updateProfile(currentUser, updateProfileDTO),
+                Map.of(
+                    "user", updatedProfile,
+                    "accessToken", result.getAccessToken()
+                ),
                 "Profile updated successfully"
             ));
         } catch (RuntimeException e) {

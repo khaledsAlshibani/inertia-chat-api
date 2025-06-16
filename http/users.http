@@ -14,7 +14,7 @@ Content-Type: {{contentType}}
 
 ### Get all users except current user
 GET {{baseUrl}}/users
-Authorization: Bearer {{login.response.body.data.accessToken}}
+Authorization: Bearer {{updateProfile.response.body.data.accessToken}}
 
 ### Get current user profile
 GET {{baseUrl}}/users/me
@@ -30,14 +30,15 @@ Authorization: Bearer {{login.response.body.data.accessToken}}
 }
 
 ### Update user profile
+# @name updateProfile
 PUT {{baseUrl}}/users/me
 Content-Type: {{contentType}}
 Authorization: Bearer {{login.response.body.data.accessToken}}
 
 {
-    "name": "Updated Name",
-    "email": "updated.email@example.com",
-    "username": "updatedusername",
+    "name": "Ahmed",
+    "email": "ahmeds@example.com",
+    "username": "ahmeds",
     "profilePicture": "https://example.com/profile.jpg"
 }
 

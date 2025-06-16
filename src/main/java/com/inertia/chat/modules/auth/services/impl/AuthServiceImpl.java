@@ -159,6 +159,33 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
+    @Override
+    @Transactional
+    public AuthResponse refreshTokensForUser(User user) {
+        // Get the latest refresh token for the user
+        RefreshToken latestToken = refreshTokenRepository.findByUserIdOrderByCreatedAtDesc(user.getId())
+            .stream()
+            .findFirst()
+            .orElseThrow(() -> new RuntimeException("No refresh token found for user"));
+
+        if (latestToken.getExpiresAt().isBefore(LocalDateTime.now())) {
+            refreshTokenRepository.delete(latestToken);
+            throw new RuntimeException("Refresh token has expired");
+        }
+
+        String newAccessToken = jwtUtil.generateAccessToken(user.getEmail(), user.getId());
+        String newRefreshTokenRaw = jwtUtil.generateRefreshToken(user.getEmail(), user.getId());
+        String newRefreshTokenHash = HashUtil.sha256(newRefreshTokenRaw);
+        
+        // Update the existing token
+        latestToken.setToken(newRefreshTokenHash);
+        latestToken.setCreatedAt(LocalDateTime.now());
+        latestToken.setExpiresAt(LocalDateTime.now().plusDays(7));
+        refreshTokenRepository.save(latestToken);
+
+        return new AuthResponseWithRefresh(user.getId(), newAccessToken, user.getUsername(), user.getEmail(), newRefreshTokenRaw);
+    }
+
     public static class AuthResponseWithRefresh extends AuthResponse {
         private final String refreshToken;
         public AuthResponseWithRefresh(long userId, String accessToken, String username, String email, String refreshToken) {

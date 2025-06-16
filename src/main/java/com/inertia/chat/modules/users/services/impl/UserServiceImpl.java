@@ -1,5 +1,6 @@
 package com.inertia.chat.modules.users.services.impl;
 
+import com.inertia.chat.common.exceptions.ValidationException;
 import com.inertia.chat.modules.users.dto.DeleteProfileDTO;
 import com.inertia.chat.modules.users.dto.UpdateProfileDTO;
 import com.inertia.chat.modules.users.dto.UpdateStatusDTO;
@@ -32,7 +33,14 @@ public class UserServiceImpl implements UserService {
         log.info("Fetching all users except user with id: {}", currentUser.getId());
         return userRepository.findAllByIdNot(currentUser.getId())
                 .stream()
-                .map(u -> new UserListDTO(u.getId(), u.getUsername(), u.getName(), u.getStatus()))
+                .map(u -> new UserListDTO(
+                    u.getId(),
+                    u.getUsername(),
+                    u.getName(),
+                    u.getStatus(),
+                    u.getLastSeen(),
+                    u.getProfilePicture()
+                ))
                 .collect(Collectors.toList());
     }
 
@@ -60,14 +68,14 @@ public class UserServiceImpl implements UserService {
         if (!currentUser.getUsername().equals(updateProfileDTO.getUsername()) &&
             userRepository.existsByUsername(updateProfileDTO.getUsername())) {
             log.warn("Username {} is already taken", updateProfileDTO.getUsername());
-            throw new RuntimeException("Username is already taken");
+            throw new ValidationException("username", "Username is already taken");
         }
 
         // Check if email is already taken by another user
         if (!currentUser.getEmail().equals(updateProfileDTO.getEmail()) &&
             userRepository.existsByEmail(updateProfileDTO.getEmail())) {
             log.warn("Email {} is already taken", updateProfileDTO.getEmail());
-            throw new RuntimeException("Email is already taken");
+            throw new ValidationException("email", "Email is already taken");
         }
 
         currentUser.setName(updateProfileDTO.getName());
@@ -82,7 +90,9 @@ public class UserServiceImpl implements UserService {
             updatedUser.getId(),
             updatedUser.getUsername(),
             updatedUser.getName(),
-            updatedUser.getStatus()
+            updatedUser.getStatus(),
+            updatedUser.getLastSeen(),
+            updatedUser.getProfilePicture()
         );
     }
 
@@ -109,20 +119,19 @@ public class UserServiceImpl implements UserService {
         // Only allow ONLINE and OFFLINE status
         if (updateStatusDTO.getStatus() != UserStatus.ONLINE && 
             updateStatusDTO.getStatus() != UserStatus.OFFLINE) {
-            throw new RuntimeException("Invalid status. Only ONLINE and OFFLINE are allowed.");
+            throw new ValidationException("status", "Invalid status. Only ONLINE and OFFLINE are allowed.");
         }
 
-        currentUser.setStatus(updateStatusDTO.getStatus());
-        currentUser.setLastSeen(LocalDateTime.now());
+        // Use setUserStatus to ensure lastSeen is updated
+        setUserStatus(currentUser, updateStatusDTO.getStatus());
         
-        User updatedUser = userRepository.save(currentUser);
-        log.info("Status updated successfully for user with id: {}", currentUser.getId());
-
         return new UserListDTO(
-            updatedUser.getId(),
-            updatedUser.getUsername(),
-            updatedUser.getName(),
-            updatedUser.getStatus()
+            currentUser.getId(),
+            currentUser.getUsername(),
+            currentUser.getName(),
+            currentUser.getStatus(),
+            currentUser.getLastSeen(),
+            currentUser.getProfilePicture()
         );
     }
 
@@ -133,5 +142,6 @@ public class UserServiceImpl implements UserService {
         user.setStatus(status);
         user.setLastSeen(LocalDateTime.now());
         userRepository.save(user);
+        log.info("Status and last seen updated for user with id: {}", user.getId());
     }
 }
