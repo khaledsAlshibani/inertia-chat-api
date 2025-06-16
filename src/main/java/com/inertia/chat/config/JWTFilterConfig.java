@@ -38,8 +38,8 @@ public class JWTFilterConfig extends OncePerRequestFilter implements UserDetails
             throws ServletException, IOException {
 
         String path = request.getRequestURI();
-        // Skip JWT validation for refresh and logout endpoints
-        if ("/auth/refresh".equals(path) || "/auth/logout".equals(path)) {
+        // Skip JWT validation for everything under /auth/*
+        if (path.startsWith(request.getContextPath() + "/auth/")) {
             filterChain.doFilter(request, response);
             return;
         }
