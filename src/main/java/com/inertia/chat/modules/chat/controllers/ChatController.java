@@ -46,7 +46,7 @@ public class ChatController {
             }
         }
 
-    @GetMapping("/all")
+    @GetMapping()
     public ResponseEntity<EnvelopeResponse<List<ChatDTO>>> getAllChats(
             @AuthenticationPrincipal User currentUser) {
         List<ChatDTO> chats = chatService.getUserChats(currentUser.getId());
