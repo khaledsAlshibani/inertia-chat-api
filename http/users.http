@@ -37,9 +37,8 @@ Authorization: Bearer {{login.response.body.data.accessToken}}
 
 {
     "name": "Ahmed",
-    "email": "ahmeds@example.com",
-    "username": "ahmeds",
-    "profilePicture": "https://example.com/profile.jpg"
+    "username": "ahmed",
+    "profilePicture": "https://i.pravatar.cc/150?img=2"
 }
 
 ### Delete user profile

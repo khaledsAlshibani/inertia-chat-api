@@ -71,15 +71,7 @@ public class UserServiceImpl implements UserService {
             throw new ValidationException("username", "Username is already taken");
         }
 
-        // Check if email is already taken by another user
-        if (!currentUser.getEmail().equals(updateProfileDTO.getEmail()) &&
-            userRepository.existsByEmail(updateProfileDTO.getEmail())) {
-            log.warn("Email {} is already taken", updateProfileDTO.getEmail());
-            throw new ValidationException("email", "Email is already taken");
-        }
-
         currentUser.setName(updateProfileDTO.getName());
-        currentUser.setEmail(updateProfileDTO.getEmail());
         currentUser.setUsername(updateProfileDTO.getUsername());
         currentUser.setProfilePicture(updateProfileDTO.getProfilePicture());
 

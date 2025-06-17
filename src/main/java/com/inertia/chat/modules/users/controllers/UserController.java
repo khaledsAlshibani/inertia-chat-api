@@ -46,30 +46,15 @@ public class UserController {
     }
 
     @PutMapping("/me")
-    public ResponseEntity<EnvelopeResponse<Map<String, Object>>> updateProfile(
+    public ResponseEntity<EnvelopeResponse<UserProfileDTO>> updateProfile(
             @AuthenticationPrincipal User currentUser,
-            @Valid @RequestBody UpdateProfileDTO updateProfileDTO,
-            HttpServletResponse response) {
+            @Valid @RequestBody UpdateProfileDTO updateProfileDTO) {
         try {
-            UserProfileDTO updatedProfile = userService.getProfile(currentUser);
             userService.updateProfile(currentUser, updateProfileDTO);
-            AuthResponse result = authService.refreshTokensForUser(currentUser);
+            UserProfileDTO updatedProfile = userService.getProfile(currentUser);
             
-            if (result instanceof AuthServiceImpl.AuthResponseWithRefresh authWithRefresh) {
-                CookieUtil.setRefreshTokenCookie(response, authWithRefresh.getRefreshToken());
-                return ResponseEntity.ok(EnvelopeResponse.success(
-                    Map.of(
-                        "user", updatedProfile,
-                        "accessToken", authWithRefresh.getAccessToken()
-                    ),
-                    "Profile updated successfully"
-                ));
-            }
             return ResponseEntity.ok(EnvelopeResponse.success(
-                Map.of(
-                    "user", updatedProfile,
-                    "accessToken", result.getAccessToken()
-                ),
+                updatedProfile,
                 "Profile updated successfully"
             ));
         } catch (RuntimeException e) {
