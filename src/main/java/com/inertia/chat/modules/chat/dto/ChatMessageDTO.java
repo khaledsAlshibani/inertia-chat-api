@@ -21,6 +21,7 @@ public class ChatMessageDTO {
     private String senderProfilePicture;
     private Long chatId;
     private LocalDateTime createdAt;
+    private LocalDateTime editedAt;          
     private MessageType type;
     private List<AttachmentDTO> attachments;
 }

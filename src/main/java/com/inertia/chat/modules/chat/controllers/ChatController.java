@@ -31,20 +31,20 @@ public class ChatController {
     }
 
     @PostMapping(value = "/{chatId}/messages", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-        public ResponseEntity<EnvelopeResponse<ChatMessageDTO>> send(
-                @AuthenticationPrincipal User user,
-                @PathVariable Long chatId,
-                @RequestParam(required = false) String content,
-                @RequestPart(required = false) List<MultipartFile> attachments
-        ) {
-            try {
-                ChatMessageDTO savedMessage = chatService.saveMessage(user.getId(), chatId, content, attachments);
-                return ResponseEntity.ok(EnvelopeResponse.success(savedMessage, "Message sent successfully"));
-            } catch (Exception e) {
-                return ResponseEntity.badRequest()
-                        .body(EnvelopeResponse.error(List.of("Failed to send message: " + e.getMessage())));
+            public ResponseEntity<EnvelopeResponse<ChatMessageDTO>> send(
+                    @AuthenticationPrincipal User user,
+                    @PathVariable Long chatId,
+                    @RequestParam(required = false) String content,
+                    @RequestPart(required = false) List<MultipartFile> attachments
+            ) {
+                try {
+                    ChatMessageDTO savedMessage = chatService.saveMessage(user.getId(), chatId, content, attachments);
+                    return ResponseEntity.ok(EnvelopeResponse.success(savedMessage, "Message sent successfully"));
+                } catch (Exception e) {
+                    return ResponseEntity.badRequest()
+                            .body(EnvelopeResponse.error(List.of("Failed to send message: " + e.getMessage())));
+                }
             }
-        }
 
     @GetMapping()
     public ResponseEntity<EnvelopeResponse<List<ChatDTO>>> getAllChats(
@@ -54,7 +54,6 @@ public class ChatController {
         return ResponseEntity.ok(EnvelopeResponse.success(chats, "Chats found"));
     }
     
-
     @GetMapping("/with/{userId}")
     public ResponseEntity<EnvelopeResponse<Long>> findOneToOneChat(
             @AuthenticationPrincipal User currentUser,

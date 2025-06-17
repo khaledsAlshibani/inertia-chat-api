@@ -4,6 +4,8 @@ import com.inertia.chat.modules.chat.dto.ChatMessageDTO;
 import com.inertia.chat.modules.chat.entities.Message;
 import com.inertia.chat.modules.chat.enums.MessageType;
 import com.inertia.chat.modules.chat.events.MessageCreatedEvent;
+import com.inertia.chat.modules.chat.events.MessageDeletedEvent;
+import com.inertia.chat.modules.chat.events.MessageUpdatedEvent;
 import com.inertia.chat.modules.chat.mappers.ChatMessageMapper;
 import com.inertia.chat.modules.chat.services.ChatService;
 import lombok.RequiredArgsConstructor;
@@ -88,9 +90,26 @@ public class ChatWebSocketController {
     }
 
    @EventListener
-public void onMessageCreated(MessageCreatedEvent ev) {
-    messagingTemplate.convertAndSend("/topic/chat." + ev.getMessageDTO().getChatId(), ev.getMessageDTO());
-}
+    public void onMessageCreated(MessageCreatedEvent ev) {
+        messagingTemplate.convertAndSend("/topic/chat." + ev.getMessageDTO().getChatId(), ev.getMessageDTO());
+    }
+
+    @EventListener
+    public void onMessageUpdated(MessageUpdatedEvent ev) {
+        ChatMessageDTO msg = ev.getMessage();
+        msg.setType(MessageType.UPDATE);
+        messagingTemplate.convertAndSend("/topic/chat." + msg.getChatId(), msg);
+    }
+
+    @EventListener
+    public void onMessageDeleted(MessageDeletedEvent ev) {
+        ChatMessageDTO tombstone = ChatMessageDTO.builder()
+            .id(ev.getMessageId())
+            .chatId(ev.getChatId())
+            .type(MessageType.DELETE)
+            .build();
+        messagingTemplate.convertAndSend("/topic/chat." + ev.getChatId() ,tombstone);
+    }
 }
 
  
