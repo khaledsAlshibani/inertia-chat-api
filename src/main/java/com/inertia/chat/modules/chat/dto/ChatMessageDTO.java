@@ -24,4 +24,5 @@ public class ChatMessageDTO {
     private LocalDateTime editedAt;          
     private MessageType type;
     private List<AttachmentDTO> attachments;
+    private List<MessageStatusDTO> statuses;
 }
