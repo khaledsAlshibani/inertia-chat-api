@@ -9,6 +9,7 @@ import com.inertia.chat.modules.chat.entities.Chat;
 import com.inertia.chat.modules.chat.entities.ChatUser;
 import com.inertia.chat.modules.chat.entities.ChatUserId;
 import com.inertia.chat.modules.chat.entities.Message;
+import com.inertia.chat.modules.chat.entities.MessageStatus;
 import com.inertia.chat.modules.chat.enums.ChatType;
 import com.inertia.chat.modules.chat.enums.MessageType;
 import com.inertia.chat.modules.chat.events.MessageCreatedEvent;
@@ -84,6 +85,19 @@ public class ChatServiceImpl implements ChatService {
                 // Set the message for each attachment entity
                 attachmentEntities.forEach(att -> att.setMessage(message));
                 message.setAttachments(attachmentEntities);
+
+                // Initialize read‑status for every *other* participant
+                List<MessageStatus> statuses = chat.getParticipants().stream()
+                        .map(ChatUser::getUser)
+                        .filter(u -> !u.getId().equals(senderId))
+                        .map(u -> MessageStatus.builder()
+                                .message(message)
+                                .user(u)
+                                .isRead(false)
+                                .build())
+                        .collect(Collectors.toList());
+                
+                message.setReadStatus(statuses);
 
                 // Save the message (will cascade‐save attachments)
                 Message saved = messageRepository.save(message);

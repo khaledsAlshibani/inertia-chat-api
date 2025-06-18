@@ -8,14 +8,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.inertia.chat.modules.chat.dto.ChatMessageDTO;
+import com.inertia.chat.modules.chat.dto.MessageStatusDTO;
 import com.inertia.chat.modules.chat.dto.UpdateMessageRequest;
 import com.inertia.chat.modules.chat.entities.Message;
+import com.inertia.chat.modules.chat.entities.MessageStatus;
 import com.inertia.chat.modules.chat.events.MessageCreatedEvent;
 import com.inertia.chat.modules.chat.events.MessageDeletedEvent;
 import com.inertia.chat.modules.chat.events.MessageUpdatedEvent;
 import com.inertia.chat.modules.chat.mappers.ChatMessageMapper;
 import com.inertia.chat.modules.chat.repositories.ChatRepository;
 import com.inertia.chat.modules.chat.repositories.MessageRepository;
+import com.inertia.chat.modules.chat.repositories.MessageStatusRepository;
 import com.inertia.chat.modules.chat.services.MessageService;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -25,6 +28,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class MessageServiceImpl implements MessageService {
     private final MessageRepository messageRepository;
+    private final MessageStatusRepository messageStatusRepository;
     private final ApplicationEventPublisher eventPublisher; 
 
     @Override
@@ -64,6 +68,19 @@ public class MessageServiceImpl implements MessageService {
         messageRepository.delete(msg);
 
         eventPublisher.publishEvent(new MessageDeletedEvent(this, chatId, messageId));
+    }
+
+    @Transactional
+    public void markAsRead(Long messageId, Long currentUserId) {
+        MessageStatus status = messageStatusRepository
+            .findByMessageIdAndUserId(messageId, currentUserId)
+            .orElseThrow(() -> new EntityNotFoundException("Status not found"));
+
+        if (!status.isRead()) {
+            status.setRead(true);
+            // readAt set automatically in @PreUpdate
+            messageStatusRepository.save(status);
+        }
     }
 }
 

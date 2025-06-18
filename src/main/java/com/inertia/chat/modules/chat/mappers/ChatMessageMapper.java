@@ -2,6 +2,7 @@ package com.inertia.chat.modules.chat.mappers;
 
 import com.inertia.chat.modules.chat.dto.AttachmentDTO;
 import com.inertia.chat.modules.chat.dto.ChatMessageDTO;
+import com.inertia.chat.modules.chat.dto.MessageStatusDTO;
 import com.inertia.chat.modules.chat.entities.Attachment;
 import com.inertia.chat.modules.chat.entities.Message;
 import com.inertia.chat.modules.chat.enums.AttachmentType;
@@ -24,6 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
             dto.setSenderProfilePicture(message.getSender().getProfilePicture());
             dto.setChatId(message.getChat().getId());
             dto.setCreatedAt(message.getCreatedAt());
+            dto.setEditedAt(message.getEditedAt());
             dto.setType(MessageType.CHAT);
 
             // map attachments
@@ -37,6 +39,22 @@ import org.springframework.web.multipart.MultipartFile;
                 dto.setAttachments(Collections.emptyList());
             }
 
+            // map per-recipient read status
+            if (message.getReadStatus() != null) {
+                dto.setStatuses(
+                    message.getReadStatus().stream()
+                        .map(status -> MessageStatusDTO.builder()
+                            .userId(status.getUser().getId())
+                            .read(status.isRead())
+                            .readAt(status.getReadAt())
+                            .build()
+                        )
+                        .collect(Collectors.toList())
+                );
+            } else {
+                dto.setStatuses(Collections.emptyList());
+            }
+
             return dto;
         }
 
@@ -46,8 +64,9 @@ import org.springframework.web.multipart.MultipartFile;
                 // sender & chat must be set by caller
                 .build();
 
-            // initialize empty attachments list
+            // initialize empty attachments list & statuses
             message.setAttachments(new ArrayList<>());
+            message.setReadStatus(new ArrayList<>());
             return message;
         }
 
