@@ -14,7 +14,7 @@ Content-Type: {{contentType}}
 
 ### Get all users except current user
 GET {{baseUrl}}/users
-Authorization: Bearer {{updateProfile.response.body.data.accessToken}}
+Authorization: Bearer {{login.response.body.data.accessToken}}
 
 ### Get current user profile
 GET {{baseUrl}}/users/me
@@ -58,4 +58,8 @@ Authorization: Bearer {{login.response.body.data.accessToken}}
 ### Create new 1:1 chat with another user
 # Replace {userId} with the actual user ID you want to chat with
 POST {{baseUrl}}/chats/with/1
+Authorization: Bearer {{login.response.body.data.accessToken}}
+
+### Get all chats for current user
+GET {{baseUrl}}/chats
 Authorization: Bearer {{login.response.body.data.accessToken}}
