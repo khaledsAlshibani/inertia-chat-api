@@ -6,6 +6,7 @@ import com.inertia.chat.modules.auth.services.AuthService;
 import com.inertia.chat.modules.auth.services.impl.AuthServiceImpl;
 import com.inertia.chat.modules.auth.utils.CookieUtil;
 import com.inertia.chat.modules.users.dto.DeleteProfileDTO;
+import com.inertia.chat.modules.users.dto.UpdateAvatarDTO;
 import com.inertia.chat.modules.users.dto.UpdateProfileDTO;
 import com.inertia.chat.modules.users.dto.UpdateStatusDTO;
 import com.inertia.chat.modules.users.dto.UserListDTO;
@@ -47,23 +48,34 @@ public class UserController {
         ));
     }
 
-    @PutMapping(value = "/me", consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
+    @PutMapping(value = "/me")
     public ResponseEntity<EnvelopeResponse<UserProfileDTO>> updateProfile(
             @AuthenticationPrincipal User currentUser,
-            @RequestPart("name") String name,
-            @RequestPart("username") String username,
-            @RequestPart(value = "avatar", required = false) MultipartFile avatar) {
+            @Valid @RequestBody UpdateProfileDTO updateProfileDTO) {
         try {
-            UpdateProfileDTO updateProfileDTO = new UpdateProfileDTO();
-            updateProfileDTO.setName(name);
-            updateProfileDTO.setUsername(username);
-            
-            userService.updateProfile(currentUser, updateProfileDTO, avatar);
+            userService.updateProfileData(currentUser, updateProfileDTO);
             UserProfileDTO updatedProfile = userService.getProfile(currentUser);
             
             return ResponseEntity.ok(EnvelopeResponse.success(
                 updatedProfile,
                 "Profile updated successfully"
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(EnvelopeResponse.error(List.of(e.getMessage())));
+        }
+    }
+
+    @PutMapping(value = "/me/avatar", consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
+    public ResponseEntity<EnvelopeResponse<UserProfileDTO>> updateAvatar(
+            @AuthenticationPrincipal User currentUser,
+            @Valid @ModelAttribute UpdateAvatarDTO updateAvatarDTO) {
+        try {
+            userService.updateAvatar(currentUser, updateAvatarDTO.getAvatar());
+            UserProfileDTO updatedProfile = userService.getProfile(currentUser);
+            
+            return ResponseEntity.ok(EnvelopeResponse.success(
+                updatedProfile,
+                "Avatar updated successfully"
             ));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(EnvelopeResponse.error(List.of(e.getMessage())));

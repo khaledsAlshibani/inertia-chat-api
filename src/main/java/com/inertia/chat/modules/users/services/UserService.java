@@ -14,7 +14,8 @@ import java.util.List;
 public interface UserService {
     List<UserListDTO> getAllUsersExceptCurrent(User currentUser);
     UserProfileDTO getProfile(User currentUser);
-    UserListDTO updateProfile(User currentUser, UpdateProfileDTO updateProfileDTO, MultipartFile avatar);
+    UserListDTO updateProfileData(User currentUser, UpdateProfileDTO updateProfileDTO);
+    UserListDTO updateAvatar(User currentUser, MultipartFile avatar);
     void deleteProfile(User currentUser, DeleteProfileDTO deleteProfileDTO);
     UserListDTO updateStatus(User currentUser, UpdateStatusDTO updateStatusDTO);
     void setUserStatus(User user, UserStatus status);

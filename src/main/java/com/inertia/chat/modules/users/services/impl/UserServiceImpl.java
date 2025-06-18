@@ -64,8 +64,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public UserListDTO updateProfile(User currentUser, UpdateProfileDTO updateProfileDTO, MultipartFile avatar) {
-        log.info("Updating profile for user with id: {}", currentUser.getId());
+    public UserListDTO updateProfileData(User currentUser, UpdateProfileDTO updateProfileDTO) {
+        log.info("Updating profile data for user with id: {}", currentUser.getId());
 
         // Check if username is already taken by another user
         if (!currentUser.getUsername().equals(updateProfileDTO.getUsername()) &&
@@ -77,13 +77,48 @@ public class UserServiceImpl implements UserService {
         currentUser.setName(updateProfileDTO.getName());
         currentUser.setUsername(updateProfileDTO.getUsername());
 
-        if (avatar != null && !avatar.isEmpty()) {
-            String avatarUrl = fileStorage.uploadAvatar(avatar);
-            currentUser.setProfilePicture(avatarUrl);
+        User updatedUser = userRepository.save(currentUser);
+        log.info("Profile data updated successfully for user with id: {}", currentUser.getId());
+
+        return new UserListDTO(
+            updatedUser.getId(),
+            updatedUser.getUsername(),
+            updatedUser.getName(),
+            updatedUser.getStatus(),
+            updatedUser.getLastSeen(),
+            updatedUser.getProfilePicture()
+        );
+    }
+
+    @Override
+    @Transactional
+    public UserListDTO updateAvatar(User currentUser, MultipartFile avatar) {
+        log.info("Updating avatar for user with id: {}", currentUser.getId());
+
+        // Validate file
+        if (avatar == null || avatar.isEmpty()) {
+            log.warn("Avatar file is empty for user with id: {}", currentUser.getId());
+            throw new ValidationException("avatar", "Avatar file cannot be empty");
         }
 
+        // Validate file size (max 1MB)
+        if (avatar.getSize() > 1 * 1024 * 1024) {
+            log.warn("Avatar file size exceeds limit for user with id: {}", currentUser.getId());
+            throw new ValidationException("avatar", "Avatar file size must be less than 1MB");
+        }
+
+        // Validate content type
+        String contentType = avatar.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            log.warn("Invalid avatar content type for user with id: {}", currentUser.getId());
+            throw new ValidationException("avatar", "Avatar must be an image file");
+        }
+
+        String avatarUrl = fileStorage.uploadAvatar(avatar);
+        currentUser.setProfilePicture(avatarUrl);
+
         User updatedUser = userRepository.save(currentUser);
-        log.info("Profile updated successfully for user with id: {}", currentUser.getId());
+        log.info("Avatar updated successfully for user with id: {}", currentUser.getId());
 
         return new UserListDTO(
             updatedUser.getId(),
