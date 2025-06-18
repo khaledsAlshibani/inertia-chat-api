@@ -1,10 +1,12 @@
 package com.inertia.chat.modules.chat.controllers;
 
 import com.inertia.chat.modules.chat.dto.ChatMessageDTO;
+import com.inertia.chat.modules.chat.dto.MessageStatusDTO;
 import com.inertia.chat.modules.chat.entities.Message;
 import com.inertia.chat.modules.chat.enums.MessageType;
 import com.inertia.chat.modules.chat.events.MessageCreatedEvent;
 import com.inertia.chat.modules.chat.events.MessageDeletedEvent;
+import com.inertia.chat.modules.chat.events.MessageStatusUpdatedEvent;
 import com.inertia.chat.modules.chat.events.MessageUpdatedEvent;
 import com.inertia.chat.modules.chat.mappers.ChatMessageMapper;
 import com.inertia.chat.modules.chat.services.ChatService;
@@ -17,6 +19,8 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
+
+import java.util.List;
 import java.util.Map;
 
 @Controller
@@ -109,6 +113,14 @@ public class ChatWebSocketController {
             .type(MessageType.DELETE)
             .build();
         messagingTemplate.convertAndSend("/topic/chat." + ev.getChatId() ,tombstone);
+    }
+
+    @EventListener
+    public void onStatusUpdated(MessageStatusUpdatedEvent ev) {
+        messagingTemplate.convertAndSend(
+            "/topic/chat." + ev.getChatId() + "/messages.status",
+            ev.getUpdatedStatus()
+        );
     }
 }
 
