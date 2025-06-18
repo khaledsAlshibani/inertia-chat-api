@@ -51,6 +51,7 @@ import org.springframework.web.multipart.MultipartFile;
                         )
                         .collect(Collectors.toList())
                 );
+            } else {
                 dto.setStatuses(Collections.emptyList());
             }
 
