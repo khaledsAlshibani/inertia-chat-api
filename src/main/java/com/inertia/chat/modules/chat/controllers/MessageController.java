@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+
 @RestController
 @RequestMapping("/messages")
 @RequiredArgsConstructor
@@ -38,4 +39,11 @@ public class MessageController {
         messageService.deleteMessage(messageId, currentUser.getId());
         return ResponseEntity.ok(EnvelopeResponse.success(null, "Message deleted"));
     }
+
+    @PostMapping("/{messageId}/read")
+    public ResponseEntity<EnvelopeResponse<Void>> markAsRead(@PathVariable Long messageId, @AuthenticationPrincipal User currentUser) {
+        messageService.markAsRead(messageId, currentUser.getId());
+        return ResponseEntity.ok(EnvelopeResponse.success(null, "Message marked as read"));
+    }
+    
 }
