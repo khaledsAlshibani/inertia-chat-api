@@ -40,7 +40,14 @@ public class LocalFileStorage implements FileStorage {
     }
     
     private String uploadToDirectory(MultipartFile file, Path targetDir, String urlPrefix) {
-        String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+        String originalFilename = file.getOriginalFilename();
+        String extension = "";
+        
+        if (originalFilename != null && originalFilename.contains(".")) {
+            extension = "." + originalFilename.substring(originalFilename.lastIndexOf(".") + 1);
+        }
+        
+        String fileName = UUID.randomUUID().toString() + extension;
         Path target = targetDir.resolve(fileName);
 
         try (InputStream in = file.getInputStream()) {
