@@ -15,9 +15,11 @@ import com.inertia.chat.modules.users.services.UserService;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
@@ -45,12 +47,18 @@ public class UserController {
         ));
     }
 
-    @PutMapping("/me")
+    @PutMapping(value = "/me", consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
     public ResponseEntity<EnvelopeResponse<UserProfileDTO>> updateProfile(
             @AuthenticationPrincipal User currentUser,
-            @Valid @RequestBody UpdateProfileDTO updateProfileDTO) {
+            @RequestPart("name") String name,
+            @RequestPart("username") String username,
+            @RequestPart(value = "avatar", required = false) MultipartFile avatar) {
         try {
-            userService.updateProfile(currentUser, updateProfileDTO);
+            UpdateProfileDTO updateProfileDTO = new UpdateProfileDTO();
+            updateProfileDTO.setName(name);
+            updateProfileDTO.setUsername(username);
+            
+            userService.updateProfile(currentUser, updateProfileDTO, avatar);
             UserProfileDTO updatedProfile = userService.getProfile(currentUser);
             
             return ResponseEntity.ok(EnvelopeResponse.success(

@@ -69,4 +69,36 @@ public class S3FileStorage implements FileStorage {
         // public URL pattern; adjust if you use a CDN or a different region
         return String.format("https://%s.s3.%s.amazonaws.com/%s", bucket, region, key);
     }
+
+    @Override
+    public String uploadAvatar(MultipartFile file) {
+        // Validate file type
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            throw new RuntimeException("Only image files are allowed for avatars");
+        }
+
+        // Generate unique filename with original extension
+        String originalFilename = file.getOriginalFilename();
+        String extension = originalFilename != null ? originalFilename.substring(originalFilename.lastIndexOf(".")) : ".jpg";
+        String key = "avatars/" + UUID.randomUUID() + extension;
+
+        byte[] bytes;
+        try {
+            bytes = file.getBytes();
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to read avatar file", e);
+        }
+
+        s3.putObject(
+          PutObjectRequest.builder()
+            .bucket(bucket)
+            .key(key)
+            .contentType(contentType)
+            .build(),
+          RequestBody.fromBytes(bytes)
+        );
+
+        return String.format("https://%s.s3.%s.amazonaws.com/%s", bucket, region, key);
+    }
 } 

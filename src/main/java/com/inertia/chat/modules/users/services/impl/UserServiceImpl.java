@@ -10,11 +10,13 @@ import com.inertia.chat.modules.users.entities.User;
 import com.inertia.chat.modules.users.enums.UserStatus;
 import com.inertia.chat.modules.users.repositories.UserRepository;
 import com.inertia.chat.modules.users.services.UserService;
+import com.inertia.chat.modules.chat.storage.FileStorage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -26,6 +28,7 @@ import java.util.stream.Collectors;
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final FileStorage fileStorage;
 
     @Override
     @Transactional(readOnly = true)
@@ -61,7 +64,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public UserListDTO updateProfile(User currentUser, UpdateProfileDTO updateProfileDTO) {
+    public UserListDTO updateProfile(User currentUser, UpdateProfileDTO updateProfileDTO, MultipartFile avatar) {
         log.info("Updating profile for user with id: {}", currentUser.getId());
 
         // Check if username is already taken by another user
@@ -73,7 +76,11 @@ public class UserServiceImpl implements UserService {
 
         currentUser.setName(updateProfileDTO.getName());
         currentUser.setUsername(updateProfileDTO.getUsername());
-        currentUser.setProfilePicture(updateProfileDTO.getProfilePicture());
+
+        if (avatar != null && !avatar.isEmpty()) {
+            String avatarUrl = fileStorage.uploadAvatar(avatar);
+            currentUser.setProfilePicture(avatarUrl);
+        }
 
         User updatedUser = userRepository.save(currentUser);
         log.info("Profile updated successfully for user with id: {}", currentUser.getId());

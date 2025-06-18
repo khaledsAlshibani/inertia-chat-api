@@ -7,13 +7,14 @@ import com.inertia.chat.modules.users.dto.UserListDTO;
 import com.inertia.chat.modules.users.dto.UserProfileDTO;
 import com.inertia.chat.modules.users.entities.User;
 import com.inertia.chat.modules.users.enums.UserStatus;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
 public interface UserService {
     List<UserListDTO> getAllUsersExceptCurrent(User currentUser);
     UserProfileDTO getProfile(User currentUser);
-    UserListDTO updateProfile(User currentUser, UpdateProfileDTO updateProfileDTO);
+    UserListDTO updateProfile(User currentUser, UpdateProfileDTO updateProfileDTO, MultipartFile avatar);
     void deleteProfile(User currentUser, DeleteProfileDTO deleteProfileDTO);
     UserListDTO updateStatus(User currentUser, UpdateStatusDTO updateStatusDTO);
     void setUserStatus(User user, UserStatus status);
