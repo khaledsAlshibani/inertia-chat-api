@@ -42,7 +42,7 @@ Authorization: Bearer {{login.response.body.data.accessToken}}
 }
 
 ### Delete user profile
-DELETE {{baseUrl}}/users/me
+POST {{baseUrl}}/users/me/delete
 Content-Type: {{contentType}}
 Authorization: Bearer {{login.response.body.data.accessToken}}
 

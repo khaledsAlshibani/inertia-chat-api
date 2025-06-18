@@ -76,7 +76,7 @@ public class UserController {
         }
     }
 
-    @DeleteMapping("/me")
+    @PostMapping("/me/delete")
     public ResponseEntity<EnvelopeResponse<Void>> deleteProfile(
             @AuthenticationPrincipal User currentUser,
             @Valid @RequestBody DeleteProfileDTO deleteProfileDTO) {
