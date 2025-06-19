@@ -14,4 +14,5 @@ public class ChatParticipantDTO {
     private String profilePicture;
     private UserRole role;         
     private LocalDateTime joinedAt; 
+    private LocalDateTime lastSeen; 
 }
