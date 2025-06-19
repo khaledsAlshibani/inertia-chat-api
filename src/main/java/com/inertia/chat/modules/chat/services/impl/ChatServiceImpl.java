@@ -31,6 +31,7 @@ import org.apache.coyote.BadRequestException;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.crossstore.ChangeSetPersister.NotFoundException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -224,11 +225,16 @@ public class ChatServiceImpl implements ChatService {
                                 })
                                 .findFirst()
                                 .map(chat -> {
-                                        // Get the current user from security context
-                                        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-                                        User currentUser = userRepository.findByEmail(email)
-                                                        .orElseThrow(() -> new RuntimeException(
-                                                                        "Current user not found"));
+                                        // Get authentication from security context with null check
+                                        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+                                        if (authentication == null || !(authentication.getPrincipal() instanceof User)) {
+                                                throw new RuntimeException("Invalid authentication state");
+                                        }
+
+                                        // Get current user and verify it's still valid in database
+                                        User currentUser = (User) authentication.getPrincipal();
+                                        currentUser = userRepository.findById(currentUser.getId())
+                                                .orElseThrow(() -> new RuntimeException("User no longer exists"));
 
                                         // Find the chat user record for the current user
                                         ChatUser chatUser = chatUserRepository.findByUserAndChat(currentUser, chat)

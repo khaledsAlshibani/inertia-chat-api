@@ -44,6 +44,7 @@ public class ChatMapper {
         dto.setProfilePicture(user.getProfilePicture());
         dto.setRole(chatUser.getRole());
         dto.setJoinedAt(chatUser.getJoinedAt());
+        dto.setLastSeen(user.getLastSeen());
 
         return dto;
     }

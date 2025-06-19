@@ -8,7 +8,7 @@ POST {{baseUrl}}/auth/login
 Content-Type: {{contentType}}
 
 {
-  "emailOrUsername": "ahmed",
+  "emailOrUsername": "anas",
   "password": "password123"
 }
 

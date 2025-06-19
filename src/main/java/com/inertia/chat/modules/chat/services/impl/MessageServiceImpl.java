@@ -14,6 +14,7 @@ import com.inertia.chat.modules.chat.entities.Message;
 import com.inertia.chat.modules.chat.entities.MessageStatus;
 import com.inertia.chat.modules.chat.events.MessageCreatedEvent;
 import com.inertia.chat.modules.chat.events.MessageDeletedEvent;
+import com.inertia.chat.modules.chat.events.MessageStatusUpdatedEvent;
 import com.inertia.chat.modules.chat.events.MessageUpdatedEvent;
 import com.inertia.chat.modules.chat.mappers.ChatMessageMapper;
 import com.inertia.chat.modules.chat.repositories.ChatRepository;
@@ -81,6 +82,18 @@ public class MessageServiceImpl implements MessageService {
             // readAt set automatically in @PreUpdate
             messageStatusRepository.save(status);
         }
+
+        Long chatId = status.getMessage().getChat().getId();
+
+        MessageStatusDTO statusDto = MessageStatusDTO.builder()
+            .userId(currentUserId)
+            .read(true)
+            .readAt(status.getReadAt())
+            .build();
+
+        eventPublisher.publishEvent(
+            new MessageStatusUpdatedEvent(this, chatId, statusDto)
+        );
     }
 }
 
