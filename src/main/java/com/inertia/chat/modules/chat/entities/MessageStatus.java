@@ -1,5 +1,6 @@
 package com.inertia.chat.modules.chat.entities;
 
+import com.inertia.chat.modules.chat.enums.MessageStatusType;
 import com.inertia.chat.modules.users.entities.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -28,15 +29,22 @@ public class MessageStatus {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(nullable = false)
-    private boolean isRead = false;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    MessageStatusType status;
+
+    private LocalDateTime deliveredAt;
 
     private LocalDateTime readAt;
 
     @PrePersist
     @PreUpdate
     public void updateReadAt() {
-        if (isRead && readAt == null) {
+        if (status == MessageStatusType.DELIVERED && deliveredAt == null) {
+            deliveredAt = LocalDateTime.now();
+        }
+
+        if (status == MessageStatusType.READ && readAt == null) {
             readAt = LocalDateTime.now();
         }
     }

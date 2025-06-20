@@ -7,12 +7,15 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+import com.inertia.chat.modules.chat.enums.MessageStatusType;
+
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class MessageStatusDTO {
     private Long userId;
-    private boolean read;
+    private MessageStatusType status;
+    private LocalDateTime deliveredAt;  
     private LocalDateTime readAt;
 }

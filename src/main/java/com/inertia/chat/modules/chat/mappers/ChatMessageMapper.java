@@ -45,7 +45,8 @@ import org.springframework.web.multipart.MultipartFile;
                     message.getReadStatus().stream()
                         .map(status -> MessageStatusDTO.builder()
                             .userId(status.getUser().getId())
-                            .read(status.isRead())
+                            .status(status.getStatus())
+                            .deliveredAt(status.getDeliveredAt())
                             .readAt(status.getReadAt())
                             .build()
                         )
@@ -82,7 +83,7 @@ import org.springframework.web.multipart.MultipartFile;
         public static Attachment toAttachmentEntity(MultipartFile file, String url) {
         return Attachment.builder()
             .fileName(file.getOriginalFilename())
-            .type(AttachmentType.valueOf(file.getContentType()))
+            .type(AttachmentType.fromMimeType(file.getContentType()))
             .url(url)
             .size(file.getSize())
             .build();

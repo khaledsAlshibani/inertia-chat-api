@@ -12,6 +12,7 @@ import com.inertia.chat.modules.chat.dto.MessageStatusDTO;
 import com.inertia.chat.modules.chat.dto.UpdateMessageRequest;
 import com.inertia.chat.modules.chat.entities.Message;
 import com.inertia.chat.modules.chat.entities.MessageStatus;
+import com.inertia.chat.modules.chat.enums.MessageStatusType;
 import com.inertia.chat.modules.chat.events.MessageCreatedEvent;
 import com.inertia.chat.modules.chat.events.MessageDeletedEvent;
 import com.inertia.chat.modules.chat.events.MessageStatusUpdatedEvent;
@@ -77,18 +78,20 @@ public class MessageServiceImpl implements MessageService {
             .findByMessageIdAndUserId(messageId, currentUserId)
             .orElseThrow(() -> new EntityNotFoundException("Status not found"));
 
-        if (!status.isRead()) {
-            status.setRead(true);
-            // readAt set automatically in @PreUpdate
-            messageStatusRepository.save(status);
+        if (status.getStatus() == MessageStatusType.READ) {
+            return;
         }
+
+        status.setStatus(MessageStatusType.READ);
+        messageStatusRepository.save(status);
 
         Long chatId = status.getMessage().getChat().getId();
 
         MessageStatusDTO statusDto = MessageStatusDTO.builder()
             .userId(currentUserId)
-            .read(true)
+            .status(status.getStatus())
             .readAt(status.getReadAt())
+            .deliveredAt(status.getDeliveredAt())
             .build();
 
         eventPublisher.publishEvent(

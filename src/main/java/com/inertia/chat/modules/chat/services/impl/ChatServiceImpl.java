@@ -11,6 +11,7 @@ import com.inertia.chat.modules.chat.entities.ChatUserId;
 import com.inertia.chat.modules.chat.entities.Message;
 import com.inertia.chat.modules.chat.entities.MessageStatus;
 import com.inertia.chat.modules.chat.enums.ChatType;
+import com.inertia.chat.modules.chat.enums.MessageStatusType;
 import com.inertia.chat.modules.chat.enums.MessageType;
 import com.inertia.chat.modules.chat.events.MessageCreatedEvent;
 import com.inertia.chat.modules.chat.mappers.ChatMapper;
@@ -94,7 +95,7 @@ public class ChatServiceImpl implements ChatService {
                         .map(u -> MessageStatus.builder()
                                 .message(message)
                                 .user(u)
-                                .isRead(false)
+                                .status(MessageStatusType.SENT)
                                 .build())
                         .collect(Collectors.toList());
                 
