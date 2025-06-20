@@ -7,4 +7,5 @@ public interface MessageService {
     ChatMessageDTO updateMessage(Long messageId, UpdateMessageRequest request, Long currentUserId);
     void deleteMessage(Long messageId, Long currentUserId);
     void markAsRead(Long messageId, Long currentUserId);
+    void markAsDelivered(Long messageId, Long currentUserId);
 }

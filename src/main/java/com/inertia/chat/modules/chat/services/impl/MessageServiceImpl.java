@@ -98,5 +98,28 @@ public class MessageServiceImpl implements MessageService {
             new MessageStatusUpdatedEvent(this, chatId, statusDto)
         );
     }
+
+    @Override
+    @Transactional
+    public void markAsDelivered(Long messageId, Long currentUserId) {
+        MessageStatus status = messageStatusRepository
+            .findByMessageIdAndUserId(messageId, currentUserId)
+            .orElseThrow(() -> new EntityNotFoundException("Status not found"));
+
+        if (status.getStatus() == MessageStatusType.SENT) {
+            status.setStatus(MessageStatusType.DELIVERED);
+            messageStatusRepository.save(status);
+        }
+
+                Long chatId = status.getMessage().getChat().getId();
+        MessageStatusDTO dto = MessageStatusDTO.builder()
+            .userId(currentUserId)
+            .status(status.getStatus())
+            .deliveredAt(status.getDeliveredAt())
+            .readAt(status.getReadAt())
+            .build();
+
+        eventPublisher.publishEvent(new MessageStatusUpdatedEvent(this, chatId, dto));
+    }
 }
 

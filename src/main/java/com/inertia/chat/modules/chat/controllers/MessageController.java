@@ -12,6 +12,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
 
 
 @RestController
@@ -39,6 +42,13 @@ public class MessageController {
         messageService.deleteMessage(messageId, currentUser.getId());
         return ResponseEntity.ok(EnvelopeResponse.success(null, "Message deleted"));
     }
+
+    @PostMapping("/{messageId}/delivered")
+    public ResponseEntity<EnvelopeResponse<Void>> markDelivered(@PathVariable Long messageId, @AuthenticationPrincipal User currentUser) {
+        messageService.markAsDelivered(messageId, currentUser.getId());
+        return ResponseEntity.ok(EnvelopeResponse.success(null, "Massage marked as delivered"));
+    }
+    
 
     @PostMapping("/{messageId}/read")
     public ResponseEntity<EnvelopeResponse<Void>> markAsRead(@PathVariable Long messageId, @AuthenticationPrincipal User currentUser) {
