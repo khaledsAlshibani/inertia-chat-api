@@ -89,6 +89,7 @@ public class MessageServiceImpl implements MessageService {
 
         MessageStatusDTO statusDto = MessageStatusDTO.builder()
             .userId(currentUserId)
+            .messageId(messageId)
             .status(status.getStatus())
             .readAt(status.getReadAt())
             .deliveredAt(status.getDeliveredAt())
@@ -102,6 +103,7 @@ public class MessageServiceImpl implements MessageService {
     @Override
     @Transactional
     public void markAsDelivered(Long messageId, Long currentUserId) {
+        System.err.println("status id" + messageId + " user id" + currentUserId);
         MessageStatus status = messageStatusRepository
             .findByMessageIdAndUserId(messageId, currentUserId)
             .orElseThrow(() -> new EntityNotFoundException("Status not found"));
@@ -113,6 +115,7 @@ public class MessageServiceImpl implements MessageService {
 
                 Long chatId = status.getMessage().getChat().getId();
         MessageStatusDTO dto = MessageStatusDTO.builder()
+            .messageId(messageId)
             .userId(currentUserId)
             .status(status.getStatus())
             .deliveredAt(status.getDeliveredAt())

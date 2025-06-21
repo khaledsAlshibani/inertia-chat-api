@@ -14,6 +14,7 @@ import com.inertia.chat.modules.chat.enums.MessageStatusType;
 @NoArgsConstructor
 @AllArgsConstructor
 public class MessageStatusDTO {
+    private Long messageId;
     private Long userId;
     private MessageStatusType status;
     private LocalDateTime deliveredAt;  
