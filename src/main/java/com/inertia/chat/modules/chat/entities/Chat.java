@@ -25,6 +25,8 @@ public class Chat {
     @JoinColumn(name = "creator_id")
     private User creator;
 
+    private String name;
+
     @OneToMany(mappedBy = "chat")
     private List<ChatUser> participants;
 
