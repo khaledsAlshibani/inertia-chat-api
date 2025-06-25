@@ -27,6 +27,8 @@ public class Chat {
 
     private String name;
 
+    private String avatarUrl;
+
     @OneToMany(mappedBy = "chat")
     private List<ChatUser> participants;
 
