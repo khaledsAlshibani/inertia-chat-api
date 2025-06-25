@@ -15,6 +15,8 @@ public class ChatMapper {
     public static ChatDTO toDTO(Chat chat, Message lastMessage) {
         ChatDTO dto = new ChatDTO();
         dto.setId(chat.getId());
+        dto.setName(chat.getName());
+        dto.setAvatarUrl(chat.getAvatarUrl());
         dto.setType(chat.getType().name());
 
         // Map participants using ChatParticipantDTO

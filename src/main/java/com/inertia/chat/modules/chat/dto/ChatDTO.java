@@ -7,6 +7,8 @@ import lombok.Data;
 @Data
 public class ChatDTO {
     private Long id;
+    private String name;
+    private String avatarUrl;
     private String type; 
     private List<ChatParticipantDTO> participants;
     private ChatMessageDTO lastMessage;
