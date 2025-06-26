@@ -1,9 +1,12 @@
 package com.inertia.chat.modules.chat.services.impl;
 
 import com.inertia.chat.modules.users.enums.UserRole;
+import com.inertia.chat.common.exceptions.ValidationException;
 import com.inertia.chat.modules.chat.dto.AttachmentDTO;
 import com.inertia.chat.modules.chat.dto.ChatDTO;
 import com.inertia.chat.modules.chat.dto.ChatMessageDTO;
+import com.inertia.chat.modules.chat.dto.CreateGroupChatDTO;
+import com.inertia.chat.modules.chat.dto.GroupParticipantDTO;
 import com.inertia.chat.modules.chat.entities.Attachment;
 import com.inertia.chat.modules.chat.entities.Chat;
 import com.inertia.chat.modules.chat.entities.ChatUser;
@@ -22,15 +25,14 @@ import com.inertia.chat.modules.chat.repositories.MessageRepository;
 import com.inertia.chat.modules.chat.repositories.ChatUserRepository;
 import com.inertia.chat.modules.chat.services.AttachmentService;
 import com.inertia.chat.modules.chat.services.ChatService;
+import com.inertia.chat.modules.chat.storage.FileStorage;
 import com.inertia.chat.modules.users.entities.User;
 import com.inertia.chat.modules.users.repositories.UserRepository;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
-import org.apache.coyote.BadRequestException;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.data.crossstore.ChangeSetPersister.NotFoundException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -39,9 +41,13 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -55,6 +61,7 @@ public class ChatServiceImpl implements ChatService {
         private final AttachmentRepository attachmentRepository;
         private final AttachmentService attachmentService;
         private final ApplicationEventPublisher eventPublisher;
+        private final FileStorage fileStorage;
 
         @Override
         @Transactional
@@ -318,4 +325,282 @@ public class ChatServiceImpl implements ChatService {
 
                 chatUserRepository.restoreChat(user, chat);
         }
+ 
+        @Override
+        @Transactional
+        public ChatDTO createGroupChat(
+                Long creatorId,
+                CreateGroupChatDTO dto,
+                MultipartFile avatar
+        ) {
+                User creator = userRepository.findById(creatorId)
+                        .orElseThrow(() -> new EntityNotFoundException("Creator not found"));
+
+                Chat group = Chat.builder()
+                        .creator(creator)
+                        .type(ChatType.GROUP)
+                        .name(dto.getName())
+                        .build();
+
+                if (avatar != null && !avatar.isEmpty()) {
+                        String url = fileStorage.uploadAvatar(avatar);
+                        group.setAvatarUrl(url);
+                }
+
+                group = chatRepository.save(group);
+
+                // batch‐fetch users
+                Set<Long> allIds = new HashSet<>(dto.getParticipantIds());
+                allIds.add(creatorId);
+                List<User> users = userRepository.findAllById(allIds);
+                if (users.size() != allIds.size()) {
+                        Set<Long> found = users.stream()
+                                        .map(User::getId)
+                                        .collect(Collectors.toSet());
+                        allIds.removeAll(found);
+                        throw new EntityNotFoundException("Users not found: " + allIds);
+                }
+                Map<Long, User> userMap = users.stream()
+                        .collect(Collectors.toMap(User::getId, Function.identity()));
+
+                // create and save ChatUser links
+                LocalDateTime now = LocalDateTime.now();
+                List<ChatUser> links = new ArrayList<>();
+                for (Long uid : userMap.keySet()) {
+                        User u = userMap.get(uid);
+                        ChatUser cu = ChatUser.builder()
+                        .id(new ChatUserId())
+                        .chat(group)
+                        .user(u)
+                        .role(uid.equals(creatorId) ? UserRole.OWNER : UserRole.MEMBER)
+                        .joinedAt(now)
+                        .build();
+                        links.add(cu);
+                }
+                chatUserRepository.saveAll(links);
+
+                group.setParticipants(links);
+
+                return ChatMapper.toDTO(group, null);
+        }
+
+
+        @Override
+        @Transactional(readOnly = true)
+        public ChatDTO getGroupDetails(Long chatId, Long requesterId) {
+                Chat chat = validateGroup(chatId, requesterId);
+                return ChatMapper.toDTO(chat, null);
+        }
+
+        @Override
+        @Transactional
+        public ChatDTO renameGroupChat(Long chatId, Long actorId, String newName) {
+                Chat chat = validateGroup(chatId, actorId);
+                ChatUser actorLink = chatUserRepository
+                .findByChatIdAndUserId(chatId, actorId)
+                .orElseThrow(() -> new AccessDeniedException("Not a participant"));
+                if (actorLink.getRole() != UserRole.OWNER) {
+                throw new AccessDeniedException("Only OWNER can rename");
+                }
+                chat.setName(newName);
+                chat = chatRepository.save(chat);
+                return ChatMapper.toDTO(chat, null);
+        }
+
+        @Override
+        @Transactional
+        public ChatDTO updateGroupAvatar(Long chatId, Long actorId, MultipartFile avatar) {
+                Chat chat = validateGroup(chatId, actorId);
+
+                // only OWNER or ADMIN
+                ChatUser actorLink = chatUserRepository.findByChatIdAndUserId(chatId, actorId)
+                .orElseThrow(() -> new AccessDeniedException("Not a participant"));
+                if (actorLink.getRole() == UserRole.MEMBER) {
+                throw new AccessDeniedException("Requires ADMIN or OWNER");
+                }
+
+                if (avatar == null || avatar.isEmpty()) {
+                throw new ValidationException("avatar", "File cannot be empty");
+                }
+
+                String url = fileStorage.uploadAvatar(avatar);
+                chat.setAvatarUrl(url);
+                chat = chatRepository.save(chat);
+
+                return ChatMapper.toDTO(chat, null);
+        }
+
+        @Override
+        @Transactional(readOnly = true)
+        public List<GroupParticipantDTO> getGroupParticipants(Long chatId, Long requesterId) {
+                validateGroup(chatId, requesterId);
+
+                Chat chat = chatRepository.findById(chatId)
+                        .orElseThrow(() -> new EntityNotFoundException("Chat not found"));
+                
+                return chat.getParticipants().stream()
+                        .map(part -> {
+                        var u  = part.getUser();
+                        return new GroupParticipantDTO(
+                                u.getId(),
+                                u.getUsername(),
+                                u.getName(),
+                                u.getStatus(),
+                                u.getLastSeen(),
+                                u.getProfilePicture(),
+                                part.getRole().name(),    
+                                part.getJoinedAt()       
+                        );
+                        })
+                        .toList();
+        }
+
+
+        @Override
+        @Transactional
+        public void addParticipant(Long chatId, Long actorId, Long userIdToAdd) {
+                Chat chat = validateGroup(chatId, actorId);
+                ChatUser actorLink = chatUserRepository
+                .findByChatIdAndUserId(chatId, actorId)
+                .orElseThrow(() -> new AccessDeniedException("Not a participant"));
+
+                if (actorLink.getRole() != UserRole.OWNER
+                && actorLink.getRole() != UserRole.ADMIN) {
+                throw new AccessDeniedException("Only OWNER or ADMIN can add");
+                }
+
+                if (chatUserRepository.existsByChatIdAndUserId(chatId, userIdToAdd)) {
+                throw new ValidationException("participant", "Already a participant");
+                }
+
+                User u = userRepository.findById(userIdToAdd)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+                ChatUser cu = ChatUser.builder()
+                .id(new ChatUserId())
+                .chat(chat)
+                .user(u)
+                .role(UserRole.MEMBER)
+                .joinedAt(LocalDateTime.now())
+                .build();
+                chatUserRepository.save(cu);
+        }
+
+        @Override
+        @Transactional
+        public void removeParticipant(Long chatId, Long actorId, Long userIdToRemove) {
+                Chat chat = validateGroup(chatId, actorId);
+                ChatUser actorLink = chatUserRepository
+                .findByChatIdAndUserId(chatId, actorId)
+                .orElseThrow(() -> new AccessDeniedException("Not a participant"));
+
+                if (actorLink.getRole() != UserRole.OWNER
+                && actorLink.getRole() != UserRole.ADMIN) {
+                throw new AccessDeniedException("Only OWNER or ADMIN can remove");
+                }
+                if (userIdToRemove.equals(actorId)) {
+                throw new ValidationException("participant", "Use leaveGroup to leave yourself");
+                }
+                chatUserRepository.deleteByChatIdAndUserId(chatId, userIdToRemove);
+        }
+
+
+        @Override
+        @Transactional
+        public void changeParticipantRole(
+                Long chatId,
+                Long actorId,
+                Long targetUserId,
+                String newRoleStr
+        ) {
+                Chat chat = validateGroup(chatId, actorId);
+
+                // parse & validate
+                UserRole newRole;
+                try {
+                newRole = UserRole.valueOf(newRoleStr.toUpperCase());
+                } catch (IllegalArgumentException e) {
+                throw new ValidationException("role", "Invalid role: " + newRoleStr);
+                }
+
+                ChatUser actorLink = chatUserRepository
+                .findByChatIdAndUserId(chatId, actorId)
+                .orElseThrow(() -> new AccessDeniedException("Not a participant"));
+                if (actorLink.getRole() != UserRole.OWNER) {
+                throw new AccessDeniedException("Only OWNER can change roles");
+                }
+
+                ChatUser targetLink = chatUserRepository
+                .findByChatIdAndUserId(chatId, targetUserId)
+                .orElseThrow(() -> new EntityNotFoundException("User not in chat"));
+
+                // prevent demoting last owner
+                if (targetLink.getRole() == UserRole.OWNER && newRole != UserRole.OWNER) {
+                long owners = chatUserRepository.countByChatIdAndRole(chatId, UserRole.OWNER);
+                if (owners <= 1) {
+                        throw new ValidationException("role", "Cannot demote last owner");
+                }
+                }
+
+                targetLink.setRole(newRole);
+                chatUserRepository.save(targetLink);
+        }
+
+        @Override
+        @Transactional
+        public void leaveGroup(Long chatId, Long userId) {
+                Chat chat = validateGroup(chatId, userId);
+                ChatUser leaving = chatUserRepository
+                .findByChatIdAndUserId(chatId, userId)
+                .orElseThrow(() -> new EntityNotFoundException("User not in chat"));
+
+                // if owner leaves, transfer or delete
+                if (leaving.getRole() == UserRole.OWNER) {
+                long remaining = chatUserRepository.countByChatId(chatId);
+                if (remaining > 1) {
+                        // pick first admin or member to become new owner
+                        ChatUser newOwner = chatUserRepository
+                        .findFirstByChatIdAndUserIdNotAndRoleIn(
+                                chatId, userId, List.of(UserRole.ADMIN, UserRole.MEMBER)
+                        )
+                        .stream().findFirst()
+                        .orElseThrow(() -> new IllegalStateException("No candidate for owner"));
+                        newOwner.setRole(UserRole.OWNER);
+                        chatUserRepository.save(newOwner);
+                } else {
+                        // last participant → delete group
+                        chatRepository.deleteById(chatId);
+                        return;
+                }
+                }
+
+                // remove the leaving link
+                chatUserRepository.delete(leaving);
+        }
+
+        @Override
+        @Transactional
+        public void deleteGroup(Long chatId, Long actorId) {
+                ChatUser actor = chatUserRepository
+                .findByChatIdAndUserId(chatId, actorId)
+                .orElseThrow(() -> new AccessDeniedException("Not a participant"));
+                if (actor.getRole() != UserRole.OWNER) {
+                throw new AccessDeniedException("Only OWNER can delete group");
+                }
+                Chat chat = chatRepository.findById(chatId)
+                .orElseThrow(() -> new EntityNotFoundException("Chat not found"));
+                chatRepository.deleteById(chatId);
+        }
+
+        private Chat validateGroup(Long chatId, Long userId) {
+                Chat chat = chatRepository.findById(chatId)
+                .orElseThrow(() -> new EntityNotFoundException("Chat not found: " + chatId));
+                if (chat.getType() != ChatType.GROUP) {
+                throw new IllegalArgumentException("Not a group chat");
+                }
+                if (!chatUserRepository.existsByChatIdAndUserId(chatId, userId)) {
+                throw new AccessDeniedException("Not a participant");
+                }
+                return chat;
+        }
+
 }

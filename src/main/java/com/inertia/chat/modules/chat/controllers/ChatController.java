@@ -2,9 +2,14 @@ package com.inertia.chat.modules.chat.controllers;
 
 import com.inertia.chat.modules.chat.dto.ChatDTO;
 import com.inertia.chat.modules.chat.dto.ChatMessageDTO;
+import com.inertia.chat.modules.chat.dto.CreateGroupChatDTO;
+import com.inertia.chat.modules.chat.dto.GroupParticipantDTO;
 import com.inertia.chat.modules.chat.entities.Chat;
 import com.inertia.chat.modules.chat.services.ChatService;
 import com.inertia.chat.modules.users.entities.User;
+
+import jakarta.validation.Valid;
+
 import com.inertia.chat.common.dto.EnvelopeResponse;
 import lombok.RequiredArgsConstructor;
 
@@ -31,20 +36,20 @@ public class ChatController {
     }
 
     @PostMapping(value = "/{chatId}/messages", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-            public ResponseEntity<EnvelopeResponse<ChatMessageDTO>> send(
-                    @AuthenticationPrincipal User user,
-                    @PathVariable Long chatId,
-                    @RequestParam(required = false) String content,
-                    @RequestPart(required = false) List<MultipartFile> attachments
-            ) {
-                try {
-                    ChatMessageDTO savedMessage = chatService.saveMessage(user.getId(), chatId, content, attachments);
-                    return ResponseEntity.ok(EnvelopeResponse.success(savedMessage, "Message sent successfully"));
-                } catch (Exception e) {
-                    return ResponseEntity.badRequest()
-                            .body(EnvelopeResponse.error(List.of("Failed to send message: " + e.getMessage())));
-                }
-            }
+    public ResponseEntity<EnvelopeResponse<ChatMessageDTO>> send(
+            @AuthenticationPrincipal User user,
+            @PathVariable Long chatId,
+            @RequestParam(required = false) String content,
+            @RequestPart(required = false) List<MultipartFile> attachments
+    ) {
+        try {
+            ChatMessageDTO savedMessage = chatService.saveMessage(user.getId(), chatId, content, attachments);
+            return ResponseEntity.ok(EnvelopeResponse.success(savedMessage, "Message sent successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(EnvelopeResponse.error(List.of("Failed to send message: " + e.getMessage())));
+        }
+    }
 
     @GetMapping()
     public ResponseEntity<EnvelopeResponse<List<ChatDTO>>> getAllChats(
@@ -71,7 +76,7 @@ public class ChatController {
         return ResponseEntity.ok(EnvelopeResponse.success(chat.getId(), "Chat created"));
     }
 
-    @DeleteMapping("/{chatId}")
+    @DeleteMapping("/{chatId}/user")
     public ResponseEntity<EnvelopeResponse<Void>> deleteChatForUser(
             @AuthenticationPrincipal User currentUser,
             @PathVariable Long chatId) {
@@ -79,4 +84,96 @@ public class ChatController {
         return ResponseEntity.ok(EnvelopeResponse.success(null, "Chat deleted for user"));
     }
 
+    @PostMapping(value = "/group", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<EnvelopeResponse<ChatDTO>> createGroupChat(
+        @AuthenticationPrincipal User currentUser,
+        @RequestPart("dto") @Valid CreateGroupChatDTO dto,
+        @RequestPart(value = "avatar", required = false) MultipartFile avatar
+    ) {
+        ChatDTO group = chatService.createGroupChat(currentUser.getId(), dto, avatar);
+        return ResponseEntity.ok(EnvelopeResponse.success(group, "Group created"));
+    }
+
+    @GetMapping("/{chatId}")
+    public ResponseEntity<EnvelopeResponse<ChatDTO>> getGroupDetails(
+            @AuthenticationPrincipal User currentUser,
+            @PathVariable Long chatId
+    ) {
+        ChatDTO dto = chatService.getGroupDetails(chatId, currentUser.getId());
+        return ResponseEntity.ok(EnvelopeResponse.success(dto, "Group details fetched"));
+    }
+
+    @PostMapping("/{chatId}/participants/{userId}")
+    public ResponseEntity<EnvelopeResponse<Void>> addParticipant(
+            @AuthenticationPrincipal User currentUser,
+            @PathVariable Long chatId,
+            @PathVariable Long userId) {
+        chatService.addParticipant(chatId, currentUser.getId(), userId);
+        return ResponseEntity.ok(EnvelopeResponse.success(null, "Participant added"));
+    }
+
+    @DeleteMapping("/{chatId}/participants/{userId}")
+    public ResponseEntity<EnvelopeResponse<Void>> removeParticipant(
+            @AuthenticationPrincipal User currentUser,
+            @PathVariable Long chatId,
+            @PathVariable Long userId) {
+        chatService.removeParticipant(chatId, currentUser.getId(), userId);
+        return ResponseEntity.ok(EnvelopeResponse.success(null, "Participant removed"));
+    }
+
+    @GetMapping("/{chatId}/participants")
+    public ResponseEntity<EnvelopeResponse<List<GroupParticipantDTO>>> getParticipants(
+            @AuthenticationPrincipal User currentUser,
+            @PathVariable Long chatId) {
+        List<GroupParticipantDTO> users = chatService.getGroupParticipants(chatId, currentUser.getId());
+        return ResponseEntity.ok(EnvelopeResponse.success(users, "Participants fetched"));
+    }
+
+    @PatchMapping("/{chatId}/participants/{userId}/role")
+    public ResponseEntity<EnvelopeResponse<Void>> changeRole(
+            @AuthenticationPrincipal User currentUser,
+            @PathVariable Long chatId,
+            @PathVariable Long userId,
+            @RequestParam String newRole) {
+        chatService.changeParticipantRole(chatId, currentUser.getId(), userId, newRole);
+        return ResponseEntity.ok(EnvelopeResponse.success(null, "User role updated"));
+    }
+
+    @PatchMapping("/{chatId}/name")
+    public ResponseEntity<EnvelopeResponse<ChatDTO>> renameGroup(
+            @AuthenticationPrincipal User currentUser,
+            @PathVariable Long chatId,
+            @RequestParam String name
+    ) {
+        ChatDTO updated = chatService.renameGroupChat(chatId, currentUser.getId(), name);
+        return ResponseEntity.ok(EnvelopeResponse.success(updated, "Group renamed"));
+    }
+
+    @PatchMapping(value = "/{chatId}/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<EnvelopeResponse<ChatDTO>> updateGroupAvatar(
+        @AuthenticationPrincipal User currentUser,
+        @PathVariable Long chatId,
+        @RequestPart("avatar") MultipartFile avatar
+        ) {
+        ChatDTO updated = chatService.updateGroupAvatar(chatId, currentUser.getId(), avatar);
+        return ResponseEntity.ok(EnvelopeResponse.success(updated, "Avatar updated"));
+    }
+
+    @DeleteMapping("/{chatId}/leave")
+    public ResponseEntity<EnvelopeResponse<Void>> leaveGroup(
+            @AuthenticationPrincipal User currentUser,
+            @PathVariable Long chatId
+    ) {
+        chatService.leaveGroup(chatId, currentUser.getId());
+        return ResponseEntity.ok(EnvelopeResponse.success(null, "Left group successfully"));
+    }
+
+    @DeleteMapping("/{chatId}")
+    public ResponseEntity<EnvelopeResponse<Void>> deleteGroup(
+            @AuthenticationPrincipal User currentUser,
+            @PathVariable Long chatId
+    ) {
+        chatService.deleteGroup(chatId, currentUser.getId());
+        return ResponseEntity.ok(EnvelopeResponse.success(null, "Group deleted"));
+    }
 }
