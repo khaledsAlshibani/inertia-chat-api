@@ -30,8 +30,8 @@ public class MessageStatus {
     private User user;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    MessageStatusType status;
+    @Column(nullable = false)
+    private MessageStatusType status;
 
     private LocalDateTime deliveredAt;
 
