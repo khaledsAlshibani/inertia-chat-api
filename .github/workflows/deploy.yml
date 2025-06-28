@@ -1,0 +1,58 @@
+name: Deploy
+
+on:
+    workflow_dispatch:
+
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Set up Java
+              uses: actions/setup-java@v4
+              with:
+                  java-version: "22"
+                  distribution: "temurin"
+
+            - name: Build Spring Boot JAR (skip tests)
+              run: |
+                chmod +x ./mvnw
+                ./mvnw clean package -DskipTests
+
+            - name: Set up SSH key
+              run: |
+                mkdir -p ~/.ssh
+                echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/lightsail.pem
+                chmod 600 ~/.ssh/lightsail.pem
+      
+            - name: Copy JAR
+              run: |
+                ssh -i ~/.ssh/lightsail.pem -o StrictHostKeyChecking=no ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }} << 'EOF'
+                  echo "[INFO] Checking for existing JAR..."
+                  if [ -f /opt/inertia-chat-app/chat-0.0.1-SNAPSHOT.jar ]; then
+                    echo "[INFO] Existing JAR found. Removing..."
+                    rm /opt/inertia-chat-app/chat-0.0.1-SNAPSHOT.jar
+                  else
+                    echo "[INFO] No existing JAR found."
+                  fi
+                EOF
+            
+                echo "[INFO] Uploading new JAR..."
+                scp -i ~/.ssh/lightsail.pem -o StrictHostKeyChecking=no \
+                  target/chat-0.0.1-SNAPSHOT.jar \
+                  ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }}:/opt/inertia-chat-app/chat-0.0.1-SNAPSHOT.jar
+            
+            - name: Verify deployed JAR
+              run: |
+                ssh -i ~/.ssh/lightsail.pem -o StrictHostKeyChecking=no \
+                  ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }} \
+                  "ls -lh /opt/inertia-chat-app/chat-0.0.1-SNAPSHOT.jar"
+
+            - name: Restart Spring Boot service
+              run: |
+                echo "[INFO] Restarting Spring Boot service..."
+                ssh -i ~/.ssh/lightsail.pem -o StrictHostKeyChecking=no \
+                  ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }} "sudo systemctl restart inertia-chat"
