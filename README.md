@@ -70,7 +70,7 @@ docker-compose up -d dbeaver
 #### Build the Project:
 
 ```sh
-./mvnw clean install
+./mvnw clean install -DskipTests
 ```
 
 #### Run the Application:

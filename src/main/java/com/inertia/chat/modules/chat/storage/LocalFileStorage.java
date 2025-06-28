@@ -3,13 +3,13 @@ package com.inertia.chat.modules.chat.storage;
 import java.io.InputStream;
 import java.nio.file.*;
 import java.util.UUID;
-import org.springframework.context.annotation.Profile;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import jakarta.annotation.PostConstruct;
 
 @Service
-@Profile("dev")
+@ConditionalOnExpression("'${spring.profiles.active:dev}'.equals('dev') and !'${aws.s3.enable:false}'.equals('true')")
 public class LocalFileStorage implements FileStorage {
     private Path baseDir;
     private Path avatarsDir;

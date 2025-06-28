@@ -13,14 +13,14 @@ import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.core.sync.RequestBody;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Profile;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 
 @Service
-@Profile("prod")
+@ConditionalOnExpression("'${spring.profiles.active:dev}'.equals('prod') or '${aws.s3.enable:false}'.equals('true')")
 @RequiredArgsConstructor
 public class S3FileStorage implements FileStorage {
 
