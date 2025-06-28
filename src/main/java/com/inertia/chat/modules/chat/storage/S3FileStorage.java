@@ -2,7 +2,6 @@ package com.inertia.chat.modules.chat.storage;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.UUID;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -18,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import com.inertia.chat.modules.chat.utils.FileStorageUtil;
 
 @Service
 @ConditionalOnExpression("'${spring.profiles.active:dev}'.equals('prod') or '${aws.s3.enable:false}'.equals('true')")
@@ -49,7 +49,7 @@ public class S3FileStorage implements FileStorage {
 
     @Override
     public String upload(MultipartFile file) {
-        String key = UUID.randomUUID() + "_" + file.getOriginalFilename();
+        String key = FileStorageUtil.generateFileName(file);
         byte[] bytes;
         try {
             bytes = file.getBytes();
@@ -72,16 +72,7 @@ public class S3FileStorage implements FileStorage {
 
     @Override
     public String uploadAvatar(MultipartFile file) {
-        // Validate file type
-        String contentType = file.getContentType();
-        if (contentType == null || !contentType.startsWith("image/")) {
-            throw new RuntimeException("Only image files are allowed for avatars");
-        }
-
-        // Generate unique filename with original extension
-        String originalFilename = file.getOriginalFilename();
-        String extension = originalFilename != null ? originalFilename.substring(originalFilename.lastIndexOf(".")) : ".jpg";
-        String key = "avatars/" + UUID.randomUUID() + extension;
+        String key = "avatars/" + FileStorageUtil.generateAvatarFileName(file);
 
         byte[] bytes;
         try {
@@ -94,7 +85,7 @@ public class S3FileStorage implements FileStorage {
           PutObjectRequest.builder()
             .bucket(bucket)
             .key(key)
-            .contentType(contentType)
+            .contentType(file.getContentType())
             .build(),
           RequestBody.fromBytes(bytes)
         );

@@ -2,11 +2,11 @@ package com.inertia.chat.modules.chat.storage;
 
 import java.io.InputStream;
 import java.nio.file.*;
-import java.util.UUID;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import jakarta.annotation.PostConstruct;
+import com.inertia.chat.modules.chat.utils.FileStorageUtil;
 
 @Service
 @ConditionalOnExpression("'${spring.profiles.active:dev}'.equals('dev') and !'${aws.s3.enable:false}'.equals('true')")
@@ -20,34 +20,25 @@ public class LocalFileStorage implements FileStorage {
         this.avatarsDir = Paths.get("uploads/avatars");
         try {
             Files.createDirectories(baseDir);
+            Files.createDirectories(avatarsDir);
         } catch (java.io.IOException e) {
-            throw new RuntimeException("Failed to create uploads directory", e);
+            throw new RuntimeException("Failed to create uploads directories", e);
         }
     }
 
     @Override
     public String upload(MultipartFile file) {
-        return uploadToDirectory(file, baseDir, "/uploads/");
+        String fileName = FileStorageUtil.generateFileName(file);
+        return uploadToDirectory(file, fileName, baseDir, "/uploads/");
     }
 
+    @Override
     public String uploadAvatar(MultipartFile file) {
-        String contentType = file.getContentType();
-        if (contentType == null || !contentType.startsWith("image/")) {
-            throw new RuntimeException("Only image files are allowed for avatars");
-        }
-
-        return uploadToDirectory(file, avatarsDir, "/uploads/avatars/");
+        String fileName = FileStorageUtil.generateAvatarFileName(file);
+        return uploadToDirectory(file, fileName, avatarsDir, "/uploads/avatars/");
     }
     
-    private String uploadToDirectory(MultipartFile file, Path targetDir, String urlPrefix) {
-        String originalFilename = file.getOriginalFilename();
-        String extension = "";
-        
-        if (originalFilename != null && originalFilename.contains(".")) {
-            extension = "." + originalFilename.substring(originalFilename.lastIndexOf(".") + 1);
-        }
-        
-        String fileName = UUID.randomUUID().toString() + extension;
+    private String uploadToDirectory(MultipartFile file, String fileName, Path targetDir, String urlPrefix) {
         Path target = targetDir.resolve(fileName);
 
         try (InputStream in = file.getInputStream()) {
