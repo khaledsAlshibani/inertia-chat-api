@@ -3,13 +3,16 @@
 - [Getting Started](#getting-started)
   - [1. Clone the Repository](#1-clone-the-repository)
   - [2. Set Up Configuration](#2-set-up-configuration)
-  - [2. Start the Database (PostgreSQL)](#2-start-the-database-postgresql)
-  - [3. Build and Run the Application](#3-build-and-run-the-application)
+    - [Configuration Details](#configuration-details)
+      - [Environment Variables](#environment-variables)
+      - [Storage Configuration](#storage-configuration)
+  - [3. Start the Database (PostgreSQL)](#3-start-the-database-postgresql)
+  - [4. Build and Run the Application](#4-build-and-run-the-application)
     - [Build the Project:](#build-the-project)
     - [Run the Application:](#run-the-application)
 - [API Testing](#api-testing)
   - [HTTP Test Files:](#http-test-files)
-- [WebSocket \& Chat Testing](#websocket--chat-testing)
+- [WebSocket \& Chat Testing (`deprecated`)](#websocket--chat-testing-deprecated)
 
 ## Getting Started
 
@@ -34,8 +37,48 @@ copy src/main/resources/application.yml.template src/main/resources/application.
 
 > ⚠️ Replace jwt.secret with a strong, securely stored value.
 
+#### Configuration Details
 
-### 2. Start the Database (PostgreSQL)
+The application uses a template-based configuration system that supports both environment variables and direct configuration. The `application.yml.template` file contains all available configuration options with their default values.
+
+##### Environment Variables
+
+You can override any configuration value using environment variables. The application supports the following key environment variables:
+
+**Development vs Production:**
+
+| Environment | Profile | Storage | Key Settings |
+|-------------|---------|---------|--------------|
+| **Development** | `dev` | Local | `JWT_SECRET`, `SERVER_PORT=9090` |
+| **Production** | `prod` | S3 | `JWT_SECRET`, `AWS_S3_*`, `CORS_ALLOWED_ORIGINS` |
+
+**Critical Variables:**
+- `JWT_SECRET` - **Required for both environments**
+- `AWS_S3_ENABLE=true` - **Required for production S3 storage**
+- `CORS_ALLOWED_ORIGINS` - **Must include your production domain**
+
+##### Storage Configuration
+
+**Development (Local Storage):**
+- Files stored in `uploads/` directory
+- No additional configuration needed
+- Automatic when `spring.profiles.active=dev`
+
+**Production (S3 Storage):**
+- Files stored in AWS S3 bucket
+- Requires `AWS_S3_ENABLE=true` or `spring.profiles.active=prod`
+- Must configure: `AWS_S3_BUCKET`, `AWS_S3_REGION`, `AWS_S3_ACCESS_KEY`, `AWS_S3_SECRET_KEY`
+
+**Storage Selection Priority:**
+
+| Profile | AWS S3 Enable | Storage Used | Use Case |
+|---------|---------------|--------------|----------|
+| `dev` | `false` | **Local Storage** | Development |
+| `dev` | `true` | **S3 Storage** | Dev with S3 testing |
+| `prod` | `false` | **S3 Storage** | Production (forced) |
+| `prod` | `true` | **S3 Storage** | Production |
+
+### 3. Start the Database (PostgreSQL)
 
 Use Docker Compose to start the PostgreSQL database:
 
@@ -56,14 +99,13 @@ docker-compose up -d dbeaver
   * Password: `admin`
 
 > **Database Connection Details**:
-
 * Host: `db`
 * Port: `5432`
 * Database: `inertia_chat`
 * User: `postgres`
 * Password: `postgres`
 
-### 3. Build and Run the Application
+### 4. Build and Run the Application
 
 > You can skip these steps if you're using an IDE like IntelliJ to run the application.
 
@@ -92,7 +134,9 @@ The project includes `.http` files for testing API endpoints using [REST Client]
 
 ---
 
-## WebSocket & Chat Testing
+## WebSocket & Chat Testing (`deprecated`)
+
+> ⚠️ **Note:** The static HTML test files may not reflect the latest API changes. For testing, use proper API clients or the [frontend application](https://github.com/Muneeb-Almoliky/inertia-chat-web-client/).
 
 > Default WebSocket testing runs on port `9090`. Update URLs if your port differs.
 
